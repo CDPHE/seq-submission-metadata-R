@@ -56,12 +56,11 @@ setwd(opt$metadata)
 date = Sys.Date()
 
 # Reading in all metadata sheets, subsetting out the columns needed, pulling samples with >= 50% coverage
-metadata_readin = ldply(list.files(pattern = "results_.*.csv"), read.csv, header=TRUE, na.strings = "", check.names = FALSE)
+metadata_readin = ldply(list.files(pattern = "results_.*.csv"), read.csv, header=TRUE, na.strings = c("","sample failed assembly"), check.names = FALSE)
 cols_to_keep = as.data.frame(c("accession_id", "percent_non_ambigous_bases", "collection_date", "fasta_header", "seq_run"))
 colnames(cols_to_keep) = "col_names"
 metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
-metadata_drop_no_assembly = metadata_subset_cols[metadata_subset_cols$percent_non_ambigous_bases != 'sample failed assembly',]
-metadata_50_cov = metadata_drop_no_assembly[metadata_drop_no_assembly$percent_non_ambigous_bases >= 50.0,]
+metadata_50_cov = metadata_subset_cols[metadata_subset_cols$percent_non_ambigous_bases >= 50.0,]
 
 # Creating an eepty matrix to fill in with metadata in GISAID format
 gisad_metadata = as.data.frame(matrix("",ncol=29,nrow=nrow(metadata_50_cov)))
