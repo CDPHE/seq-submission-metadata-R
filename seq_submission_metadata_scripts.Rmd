@@ -1,0 +1,413 @@
+---
+title: "REAME: R scripts for sequence submission"
+author:
+- Mandy Waters
+- CDPHE Contractor
+date: "July 2021"
+output:
+  html_document:
+    df_print: paged
+    highlight: tango
+    theme: flatly
+fontsize: 12pt
+---
+
+###Goals
+The objective of this code is to automate the creation of metadata tables for GISAID, NCBI Biosample, NCBI SRA, NCBI Genbank, and data for CDPHE submissions forms.  This document will outline the following items:
+
+1. Installing R version 4 on GCP VM with Linux Ubuntu 18.04
+2. Preparing the script and installing packages
+3. Executing the R scripts
+    + gisaid_ncbi_biosample_metadata_formatting.R
+    + ncbi_sra_metadata_formatting.R
+    + ncbi_genbank_metadata_formatting.R
+    + submission_completed_metadata.R
+
+###Installing R {.tabset .tabset-fade .tabset-pills}
+####Overview
+You will need R version 4 to load the packages used in this script. Instructions are outlined (in tabs) for users who will be installing R for the first time as well as those who have a previous version of R already installed. NOTE: running sudo apt update alone will not update R to the version needed
+
+####First R install
+Click [here](https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-18-04-quickstart) to go to page with instuctions, which are also outlined below. The code below assumes you are running Ubuntu 18.04. You will need a different repository file if you are running a different version. This repository file will install regardless of your version and then will throw errors / won't update when you install a different version
+
+```{r "load_packages", include=FALSE, message=FALSE}
+  library(knitr)
+  library(kableExtra)
+  library(png)
+  library(grid)
+```
+
+```{bash, "install_R", echo=TRUE, eval=FALSE}
+# Step 1 — Add GPG Key
+# Logged into your Ubuntu 18.04 server as a sudo non-root user, add the relevant GPG key.
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+ 
+# Step 2 — Add the R Repository
+sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/'
+    # If you’re not using 18.04, find the relevant repository from the R Project Ubuntu list, named for each release.
+
+# Step 3 — Update Package Lists
+sudo apt update
+ 
+# Step 4 — Install R
+sudo apt install r-base
+    # If prompted to confirm installation, press y to continue.
+
+# Step 5 — Test Install
+# Start R’s interactive shell as root.
+sudo -i R
+```
+
+You should see something like:
+```{r, "soln_overview", fig.width=5, fig.height=3, fig.align = "left", echo=FALSE, warning=FALSE}
+img <- readPNG("/Users/water157/Desktop/OneDrive - Pepsico/covid/confirm_r_install.png")
+grid.raster(img)
+```
+
+####Uninstall R and update
+Installing base R on 18.04 will install R version 3.5.  If you have R < 4.0 you will need to uninstall R and reinstall R version 4.  [Here](https://genomespot.blogspot.com/2020/06/installing-r-40-on-ubuntu-1804.html) is a link to instructions to unistall older versions of R and then install version 4 (same as previous tab). These instructions are also below.
+
+Uninstalling old version of R
+```{bash, "uninstall_R", echo=TRUE, eval=FALSE}
+# Step 1 - Make sure you have these dependancies installed. If you don't, you're going to have trouble installing any R packages like R curl, tidyverse, devtools, etc
+sudo apt install libssl-dev libcurl4-openssl-dev libxml2-dev
+
+#Step 2 - Remove any existing R install.
+sudo apt remove r-base* --purge
+
+# Step 3 - Remove any remaining packages. It's better to install them "fresh". They will be in locations like /home/user/R/R-3.6.6 and /usr/lib/R/library/
+
+# Step 4 - Remove any existing entry for R in the etc/apt/sources.list to install an older R version.
+sudo nano /etc/apt/sources.list
+# For example you might have something like this:
+# deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/
+
+```
+
+Now you can install R version 4
+```{bash, "install_R_2", echo=TRUE, eval=FALSE}
+# Step 1 — Add GPG Key
+# Logged into your Ubuntu 18.04 server as a sudo non-root user, add the relevant GPG key.
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+ 
+# Step 2 — Add the R Repository
+sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/'
+    # If you’re not using 18.04, find the relevant repository from the R Project Ubuntu list, named for each release.
+
+# Step 3 — Update Package Lists
+sudo apt update
+ 
+# Step 4 — Install R
+sudo apt install r-base
+    # If prompted to confirm installation, press y to continue.
+
+# Step 5 — Test Install
+# Start R’s interactive shell as root.
+sudo -i R
+```
+
+You should see something like:
+```{r, "soln_overview2", fig.width=5, fig.height=3, fig.align = "left", echo=FALSE, warning=FALSE}
+img <- readPNG("/Users/water157/Desktop/OneDrive - Pepsico/covid/confirm_r_install.png")
+grid.raster(img)
+```
+
+###Preparing script and installing packages {.tabset .tabset-fade .tabset-pills}
+####Overview
+Outlined here is instructions to make the R script executable on your VM and load necessary packages.  First step is to clone the R scripts to your VM from the CDPHE Github [link](https://github.com/CDPHE/seq-submission-metadata-R). Next you need to update the shebang line of the script to point to your Rscript directory.  
+
+First, find the directory for Rscript (loaded when you installed R). Run the following command on the ssh terminal of your VM:
+```{bash, "shebang", echo=TRUE, eval=FALSE}
+which Rscript
+#If R is installed it will print something like /usr/bin/Rscript
+```
+
+Update the shebang line in the script to point to your specific directory.  I used vim to edit the first line of the R script file.  Make sure to keep the '#!' 
+
+Now make the script executable (for some reason R scripts do not default as executable)
+```{bash, "chmod", echo=TRUE, eval=FALSE}
+chmod +x gisaid_ncbi_biosample_metadata_formatting.R
+```
+
+Now install the packages as outlined in the 'Install packages' tab.
+
+####Installing packages
+A few different packages are needed to run this script.
+```{bash, "load_packages_vm", echo=TRUE, eval=FALSE}
+# Open an R session from your VM terminal
+R
+
+# Within your R environment run the following commands
+if (packageVersion("devtools") < 1.6) {
+  install.packages("devtools")
+}
+devtools::install_github("hadley/lazyeval")
+devtools::install_github("hadley/dplyr")
+devtools::install_github("hadley/plyr")
+devtools::install_github("r-lib/cpp11")
+install.packages("tidyr")
+install.packages('optparse')
+install.packages('stringr')
+install.packages('tibble')
+
+# devtools took a couple mins to load, this is normal
+
+# Close R
+quit()
+```
+Now you're ready to run the script R scripts
+
+###GISAID and NCBI Biosample {.tabset .tabset-fade .tabset-pills}
+####Useage
+In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.\*.csv in directory), concats the  files, filters for samples > 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample. You can run this R script directly from the command line.  You will need to supply 4 pieces of information as options / flags when running the script. 
+
+**Script name:** gisaid_ncbi_biosample_metadata_formatting.R  
+**Input file regex:** results_.\*.csv  
+**Options / flags:** required to fill in all.  The code will check spelling on the sequencing information and will error out if something is misspelled (options in #4 below)  
+
+1. -m | --metadata = path/to/seq_metadata/files # This also sets the working directory to write files
+2. -f | --fasta_name = name_fasta_file_to_submit.fa
+3. -s | --submitter_name = gisaid_submitter_name
+4. -t | --seq_type = sequencing_type (Oxford Nanopore GridION, Illumina MiSeq, Illumina NextSeq)
+
+**Example usage (short flags):**
+```{bash, "gisaid_short", echo=TRUE, eval=FALSE}
+# You need to type ./ before your Rscript to run (./gisaid_ncbi_biosample_metadata_formatting.R)
+./gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_metadata -f test_fasta.fa -s mandywaters -t "Oxford Nanopore GridION"
+
+# Strings with spaces need quotes
+```
+
+**Example usage (long flags):**
+```{bash, "gisaid_long", echo=TRUE, eval=FALSE}
+# You need to type ./ before your Rscript to run (./gisaid_ncbi_biosample_metadata_formatting.R)
+./gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type "Oxford Nanopore GridION"
+
+# Strings with spaces need quotes
+```
+
+**Output to terminal:**
+Script prints the strings the user input for you to check.  If you don't privde values for all flags then the script will error out and tell you which flag(s) are missing.  The script will also error out if the sequence type name is misspelled
+
+You should see something like the following regardless of short or long flag names
+```{r, "r_out", echo=TRUE, eval=FALSE}
+./gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type "Oxford Nanopore GridION"
+
+metadata path:
+/home/mandy_waters/test_metadata
+
+name of fasta file to submit:
+test_fasta.fa
+
+submitter name:
+mandywaters
+
+sequencing type:
+Oxford Nanopore GridION
+```
+
+**Output files:**
+
+1. GISAID formatted file: gisaid_submission_date_metadata.csv (e.g. gisaid_submission_2021-07-03_metadata.csv)
+2. NCBI Biosample formatted file: ncbi_biosample_submission_date_metadata.tsv (e.g. ncbi_biosample_submission_2021-07-03_metadata.tsv)
+3. File to convert current fasta names to GISAID format (fasta_rename_accession_to_gisaid_id.csv)
+
+####Error example
+This is an example of an error message that's missing the -t option
+```{bash, "r_out2", echo=TRUE, eval=FALSE}
+./gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_metadata -f test_fasta.fa -s mandywaters 
+
+metadata path:
+/home/mandy_waters/test_metadata
+
+name of fasta file to submit:
+test_fasta.fa
+
+submitter name:
+mandywaters
+
+sequencing type:
+NA
+
+ERROR: you did not specify all varialbles. Please supply all values
+
+Error in is.data.frame(x) : object 'ncbi_biosample_metadata' not found
+Calls: write.table -> is.data.frame
+Execution halted
+```
+
+###NCBI SRA {.tabset .tabset-fade .tabset-pills}
+####Useage
+This script takes in user specified information and file sent from NCBI biosample submisssion (BioSampleObjects.txt) to create a metadata file with format needed to submit reads to SRA. You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script. 
+
+**Script name:** ncbi_sra_metadata_formatting.R  
+**Input file in path:** BioSampleObjects.txt  
+**Options / flags:** required to fill in all.  The code will check spelling on the sequencing information and will error out if something is misspelled (options in #2 below)  
+
+1. -p | --path = path/to/seq_metadata/files # This also sets the working directory to write files
+2. -t | --seq_type = sequencing_type (Oxford Nanopore GridION, Illumina MiSeq, Illumina NextSeq)
+
+**Example usage (short flags):**
+```{bash, "sra_short", echo=TRUE, eval=FALSE}
+# You need to type ./ before your Rscript to run (./ncbi_sra_metadata_formatting.R)
+./ncbi_sra_metadata_formatting.R -p /home/mandy_waters/metadata -t "Oxford Nanopore GridION"
+
+# Strings with spaces need quotes
+```
+
+**Example usage (long flags):**
+```{bash, "sra_long", echo=TRUE, eval=FALSE}
+# You need to type ./ before your Rscript to run (./ncbi_sra_metadata_formatting.R)
+./ncbi_sra_metadata_formatting.R --path /home/mandy_waters/test_metadata --seq_type "Oxford Nanopore GridION"
+
+# Strings with spaces need quotes
+```
+
+**Output to terminal:**
+Script prints the strings the user input for you to check.  If you don't privde values for all flags then the script will error out and tell you which flag(s) are missing.  The script will also error out if the sequence type name is misspelled
+
+You should see something like the following regardless of short or long flag names
+```{r, "sra_out", echo=TRUE, eval=FALSE}
+./ncbi_sra_metadata_formatting.R -p /home/mandy_waters/metadata -t "Oxford Nanopore GridION"
+
+working directory:
+/home/mandy_waters/metadata
+
+sequencing type:
+Oxford Nanopore GridION
+```
+
+**Output files:**
+
+1. SRA formatted file: ncbi_sra_submission_date_metadata.tsv (e.g. ncbi_sra_submission_2021-07-24_metadata.tsv)
+
+####Error example
+This is an example of an error message - missing the -t option
+```{bash, "sra_out2", echo=TRUE, eval=FALSE}
+./ncbi_sra_metadata_formatting.R -m /home/mandy_waters/metadata  -t "Oxford Nanopore GRIDION"
+
+working directory:
+/home/mandy_waters/metadata
+
+sequencing type:
+Oxford Nanopore GRIDION
+
+
+
+ERROR: check the spelling of your sequence type input: sequence type should match 'Illumina MiSeq', 'Illumina NextSeq', or 'Oxford Nanopore GridION'
+
+Error in is.data.frame(x) : object 'biosample_metadata' not found
+Calls: write.table -> is.data.frame
+Execution halted
+```
+
+###NCBI Genbank {.tabset .tabset-fade .tabset-pills}
+####Useage
+This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_\*.tsv), and downloaded file from NCBI SRA (metadata-.\*-processed-ok.tsv). You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script. 
+
+**Script name:** ncbi_genbank_metadata_formatting.R  
+**Input files in path:** metadata-\*-processed-ok.tsv and gisaid_hcov-19_\*.tsv  
+**Options / flags:** required to fill in all.  The code will check spelling on the sequencing information and will error out if something is misspelled (options in #2 below)  
+
+1. -p | --path = path/to/seq_metadata/files # This also sets the working directory to write files
+2. -t | --seq_type = sequencing_type (Oxford Nanopore GridION, Illumina MiSeq, Illumina NextSeq)
+
+**Example usage (short flags):**
+```{bash, "genbank_short", echo=TRUE, eval=FALSE}
+# You need to type ./ before your Rscript to run (./ncbi_sra_metadata_formatting.R)
+./ncbi_genbank_metadata_formatting.R -p /home/mandy_waters/metadata -t "Oxford Nanopore GridION"
+
+# Strings with spaces need quotes
+```
+
+**Example usage (long flags):**
+```{bash, "genbank_long", echo=TRUE, eval=FALSE}
+# You need to type ./ before your Rscript to run (./ncbi_sra_metadata_formatting.R)
+./ncbi_genbank_metadata_formatting.R --path /home/mandy_waters/test_metadata --seq_type "Oxford Nanopore GridION"
+
+# Strings with spaces need quotes
+```
+
+**Output to terminal:**
+Script prints the strings the user input for you to check.  If you don't privde values for all flags then the script will error out and tell you which flag(s) are missing.  The script will also error out if the sequence type name is misspelled
+
+You should see something like the following regardless of short or long flag names
+```{r, "genbank_out", echo=TRUE, eval=FALSE}
+./ncbi_genbank_metadata_formatting.R -p /home/mandy_waters/metadata -t "Oxford Nanopore GridION"
+
+working directory:
+/home/mandy_waters/metadata
+
+sequencing type:
+Oxford Nanopore GridION
+```
+
+**Output files:**
+
+1. NCBI Genbank formatted file: ncbi_genbank_submission_date_metadata.tsv (e.g. ncbi_genbank_submission_2021-07-24_metadata.tsv)
+
+####Error example
+This is an example of an error message - missing the -t option
+```{bash, "genbank_out2", echo=TRUE, eval=FALSE}
+./ncbi_genbank_metadata_formatting.R -m /home/mandy_waters/metadata  -t "Oxford Nanopore GRIDION"
+
+working directory:
+/home/mandy_waters/metadata
+
+sequencing type:
+Oxford Nanopore GRIDION
+
+
+
+ERROR: check the spelling of your sequence type input: sequence type should match 'Illumina MiSeq', 'Illumina NextSeq', or 'Oxford Nanopore GridION'
+
+Error in is.data.frame(x) : object 'biosample_metadata' not found
+Calls: write.table -> is.data.frame
+Execution halted
+```
+
+###Combined data - submission completed tab {.tabset .tabset-fade .tabset-pills}
+####Useage
+This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_\*.tsv), genbank donwloaded file (seqids.txt) and downloaded file from NCBI SRA (metadata-.\*-processed-ok.tsv). You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script. 
+
+**Script name:** submission_completed_metadata.R  
+**Input files in path:** metadata-\*-processed-ok.tsv, seqids.txt, and gisaid_hcov-19_\*.tsv  
+**Options / flags:** required to fill in all.  The code will check spelling on the sequencing information and will error out if something is misspelled (options in #2 below)  
+
+1. -p | --path = path/to/seq_metadata/files # This also sets the working directory to write files
+2. -s | --submitter_name = submitter name
+
+**Example usage (short flags):**
+```{bash, "completed_short", echo=TRUE, eval=FALSE}
+# You need to type ./ before your Rscript to run (./ncbi_sra_metadata_formatting.R)
+./submission_completed_metadata.R -p /home/mandy_waters/metadata -s mandy.waters
+
+# Strings with spaces need quotes
+```
+
+**Example usage (long flags):**
+```{bash, "completed_long", echo=TRUE, eval=FALSE}
+# You need to type ./ before your Rscript to run (./ncbi_sra_metadata_formatting.R)
+./submission_completed_metadata.R --path /home/mandy_waters/test_metadata --submitter_name mandy.waters
+
+# Strings with spaces need quotes
+```
+
+**Output to terminal:**
+Script prints the strings the user input for you to check.  If you don't privde values for all flags then the script will error out and tell you which flag(s) are missing.  
+
+You should see something like the following regardless of short or long flag names
+```{r, "completed_out", echo=TRUE, eval=FALSE}
+./submission_completed_metadata.R -p /home/mandy_waters/metadata -s mandy.waters
+
+working directory:
+/home/mandy_waters/metadata
+
+submitter name:
+mandy.waters
+```
+
+**Output files:**
+
+1. Compiled metadata for submission excel: final_submission_tracking_date_metadata.tsv (e.g. final_submission_tracking_2021-07-31_metadata.tsv)
+
