@@ -4,7 +4,7 @@
 # July 2021
 # Script to read in biosample data from NCBI and write out SRA metadata format
 # Usage (short) = ./ncbi_sra_metadata_formatting.R -p /path/to/working/dir -t "sequencing platform"
-# Usage (long) = ./ncbi_sra_metadata_formatting.R -path /path/to/working/dir -fasta_name name.fa.gz -seq_type "sequencing platform"
+# Usage (long) = ./ncbi_sra_metadata_formatting.R -path /path/to/working/dir -seq_type "sequencing platform"
 # Usage notes: only strings with spaces need quotes.  It will throw an error if you don't supply the path and sequence type name or if the sequence type is misspelled.
 # Usage example = ./ncbi_sra_metadata_formatting.R -p /mandy_waters/biosample_info -t "Oxford Nanopore GridION"
 

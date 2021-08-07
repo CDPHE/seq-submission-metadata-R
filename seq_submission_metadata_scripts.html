@@ -248,10 +248,10 @@ summary {
 
 <div id="goals" class="section level3">
 <h3>Goals</h3>
-<p>The objective of this code is to automate the creation of metadata tables for GISAID, NCBI Biosample, NCBI SRA, NCBI Genbank, and data for CDPHE submissions forms. This document will outline the following items:</p>
+<p>The objective of this code is to automate the creation of metadata tables for GISAID, NCBI Biosample, NCBI SRA, NCBI Genbank, and data for CDPHE tracking (all public IDs linked). This document will outline the following items:</p>
 <ol style="list-style-type: decimal">
 <li>Installing R version 4 on GCP VM with Linux Ubuntu 18.04</li>
-<li>Preparing the script and installing packages</li>
+<li>Preparing the scripts and installing packages</li>
 <li>Executing the R scripts
 <ul>
 <li>gisaid_ncbi_biosample_metadata_formatting.R</li>
@@ -260,16 +260,17 @@ summary {
 <li>submission_completed_metadata.R</li>
 </ul></li>
 </ol>
+<p>I put all my metadata files (both those required as inputs and written out from these scripts) for a batch of uploads in a single directory, so the working directory is always the same.</p>
 </div>
 <div id="installing-r" class="section level3 tabset tabset-fade tabset-pills">
 <h3>Installing R</h3>
 <div id="overview" class="section level4">
 <h4>Overview</h4>
-<p>You will need R version 4 to load the packages used in this script. Instructions are outlined (in tabs) for users who will be installing R for the first time as well as those who have a previous version of R already installed. NOTE: running sudo apt update alone will not update R to the version needed</p>
+<p>You will need at least R version 4 to load the packages used in these scripts. Instructions are outlined (in tabs) for users who will be installing R for the first time as well as those who have a previous version of R already installed. NOTE: running sudo apt update alone will not update R to the version needed.</p>
 </div>
 <div id="first-r-install" class="section level4">
 <h4>First R install</h4>
-<p>Click <a href="https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-18-04-quickstart">here</a> to go to page with instuctions, which are also outlined below. The code below assumes you are running Ubuntu 18.04. You will need a different repository file if you are running a different version. This repository file will install regardless of your version and then will throw errors / won't update when you install a different version</p>
+<p>Click <a href="https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-18-04-quickstart">here</a> to go to page with instuctions, which are also outlined below. The code below assumes you are running Ubuntu 18.04. You will need a different repository file if you are running a different version. This repository file will install regardless of your version and then will throw errors / won't update when you install a different version.</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Step 1 — Add GPG Key</span>
 <span class="co"># Logged into your Ubuntu 18.04 server as a sudo non-root user, add the relevant GPG key.</span>
 <span class="fu">sudo</span> apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
@@ -292,7 +293,7 @@ summary {
 </div>
 <div id="uninstall-r-and-update" class="section level4">
 <h4>Uninstall R and update</h4>
-<p>Installing base R on 18.04 will install R version 3.5. If you have R &lt; 4.0 you will need to uninstall R and reinstall R version 4. <a href="https://genomespot.blogspot.com/2020/06/installing-r-40-on-ubuntu-1804.html">Here</a> is a link to instructions to unistall older versions of R and then install version 4 (same as previous tab). These instructions are also below.</p>
+<p>Installing base R on 18.04 will install R version 3.5. If you have R &lt; 4.0 you will need to uninstall R and reinstall R version 4. <a href="https://genomespot.blogspot.com/2020/06/installing-r-40-on-ubuntu-1804.html">Here</a> is a link to instructions to uninstall older versions of R and then install version 4 (same as previous tab). These instructions are also below.</p>
 <p>Uninstalling old version of R</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Step 1 - Make sure you have these dependancies installed. If you don't, you're going to have trouble installing any R packages like R curl, tidyverse, devtools, etc</span>
 <span class="fu">sudo</span> apt install libssl-dev libcurl4-openssl-dev libxml2-dev
@@ -330,20 +331,20 @@ summary {
 </div>
 <div id="preparing-script-and-installing-packages" class="section level3 tabset tabset-fade tabset-pills">
 <h3>Preparing script and installing packages</h3>
-<div id="overview-1" class="section level4">
-<h4>Overview</h4>
-<p>Outlined here is instructions to make the R script executable on your VM and load necessary packages. First step is to clone the R scripts to your VM from the CDPHE Github <a href="https://github.com/CDPHE/seq-submission-metadata-R">link</a>. Next you need to update the shebang line of the script to point to your Rscript directory.</p>
+<div id="prep-scripts" class="section level4">
+<h4>Prep scripts</h4>
+<p>Outlined here is instructions to make the R script executable on your VM and load necessary packages. First step is to clone the R scripts to your VM from the CDPHE Github <a href="https://github.com/CDPHE/seq-submission-metadata-R">link</a>. Next you need to update the shebang line of each script to point to your Rscript directory.</p>
 <p>First, find the directory for Rscript (loaded when you installed R). Run the following command on the ssh terminal of your VM:</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">which</span> Rscript
 <span class="co">#If R is installed it will print something like /usr/bin/Rscript</span></code></pre></div>
 <p>Update the shebang line in the script to point to your specific directory. I used vim to edit the first line of the R script file. Make sure to keep the '#!'</p>
-<p>Now make the script executable (for some reason R scripts do not default as executable)</p>
+<p>Now make the R sscripts executable (for some reason R scripts do not default as executable)</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">chmod</span> +x gisaid_ncbi_biosample_metadata_formatting.R</code></pre></div>
 <p>Now install the packages as outlined in the 'Install packages' tab.</p>
 </div>
 <div id="installing-packages" class="section level4">
 <h4>Installing packages</h4>
-<p>A few different packages are needed to run this script.</p>
+<p>A few different packages are needed to run these scripts. The individual scripts will call the packages they need, but they must be installed on your VM first.</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Open an R session from your VM terminal</span>
 <span class="ex">R</span>
 
@@ -371,7 +372,7 @@ summary {
 <h3>GISAID and NCBI Biosample</h3>
 <div id="useage" class="section level4">
 <h4>Useage</h4>
-<p>In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.*.csv in directory), concats the files, filters for samples &gt; 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample. You can run this R script directly from the command line. You will need to supply 4 pieces of information as options / flags when running the script.</p>
+<p>In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.*.csv in directory), concats the files, filters for samples &gt; 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample as well as a file that lists the current sample names and GISAID formatted names (users can then use awk command to rename samples). You can run this R script directly from the command line. You will need to supply 4 pieces of information as options / flags when running the script.</p>
 <p><strong>Script name:</strong> gisaid_ncbi_biosample_metadata_formatting.R<br />
 <strong>Input file regex:</strong> results_.*.csv<br />
 <strong>Options / flags:</strong> required to fill in all. The code will check spelling on the sequencing information and will error out if something is misspelled (options in #4 below)</p>
@@ -412,6 +413,10 @@ Oxford Nanopore GridION</code></pre></div>
 <li>NCBI Biosample formatted file: ncbi_biosample_submission_date_metadata.tsv (e.g. ncbi_biosample_submission_2021-07-03_metadata.tsv)</li>
 <li>File to convert current fasta names to GISAID format (fasta_rename_accession_to_gisaid_id.csv)</li>
 </ol>
+<p>I use the following awk command to replace the accession IDs in the fasta with GISAID accepted names. These samples have been run through all the steps through indel finder. After this the samples are run through VADR.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Replace the accession IDs with GISAID IDs</span>
+<span class="co"># Takes in file output #3 from gisaid_ncbi_biosample_metadata_formatting.R</span>
+<span class="fu">awk</span> -F, <span class="st">'FNR==NR {f2[$1]=$2;next} $2 in f2 {$2=f2[$2]}1'</span> /path/to/fasta_rename_accession_to_gisaid_id.csv FS=<span class="st">'&gt;'</span> OFS=<span class="st">'&gt;'</span> input_fasta_post_indel_finder.fa <span class="op">&gt;</span> output_fasta_post_indel_finder_gisaid_format.fa</code></pre></div>
 </div>
 <div id="error-example" class="section level4">
 <h4>Error example</h4>
@@ -441,7 +446,7 @@ Oxford Nanopore GridION</code></pre></div>
 <h3>NCBI SRA</h3>
 <div id="useage-1" class="section level4">
 <h4>Useage</h4>
-<p>This script takes in user specified information and file sent from NCBI biosample submisssion (BioSampleObjects.txt) to create a metadata file with format needed to submit reads to SRA. You can run this R script directly from the command line. You will need to supply 2 pieces of information as options / flags when running the script.</p>
+<p>This script takes in user specified information and file sent from NCBI biosample submisssion (BioSampleObjects.txt) to create a metadata file with format needed to submit reads to SRA. You can run this R script directly from the command line. You will need to supply 2 pieces of information as options / flags when running the script. NOTE: this writes out the file names based on expected patterns for each type of sequecing and assumes that all files are gzipped. I use the script get_cat_gzip_fastq.sh, written by Mike Martin with a minor adjustments to include gzipping and write all files to the same directory for concatting Oxford Nanopore reads into a single fastq.gz. The version I use is in the same repo as these R scripts.</p>
 <p><strong>Script name:</strong> ncbi_sra_metadata_formatting.R<br />
 <strong>Input file in path:</strong> BioSampleObjects.txt<br />
 <strong>Options / flags:</strong> required to fill in all. The code will check spelling on the sequencing information and will error out if something is misspelled (options in #2 below)</p>
@@ -472,6 +477,17 @@ Oxford Nanopore GridION</code></pre></div>
 <ol style="list-style-type: decimal">
 <li>SRA formatted file: ncbi_sra_submission_date_metadata.tsv (e.g. ncbi_sra_submission_2021-07-24_metadata.tsv)</li>
 </ol>
+<p>Then I use the following code to get a list of the samples for which we want to upload the reads and then delete the rest. We downloaded all the samples, but will only submit those with &gt;50% coverage.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Get list of files to keep</span>
+<span class="fu">cut</span> -f 14 ncbi_sra_submission_2021-07-17_metadata.tsv <span class="kw">|</span> <span class="fu">sed</span> <span class="st">'s/&quot;//g'</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="st">'^CO'</span> <span class="op">&gt;</span> fastqs_to_keep.tsv
+
+<span class="co"># Delete the files we don't want to keep. Run this in the directory were your gzipped fastas are located. You may need to change the path to fastqs_to_keep.tsv. To see how this runs you can always comment out rm &quot;$i&quot; line first to check which fastas will be deleted. Then add it back in to delete files you won't be uploading.</span>
+<span class="kw">for</span> <span class="ex">i</span> in *fastq.gz<span class="kw">;</span> <span class="kw">do</span>
+    <span class="kw">if</span> ! <span class="fu">grep</span> -qxFe <span class="st">&quot;</span><span class="va">$i</span><span class="st">&quot;</span> ../../fastqs_to_keep.tsv<span class="kw">;</span> <span class="kw">then</span> 
+        <span class="bu">echo</span> <span class="st">&quot;Deleting: </span><span class="va">$i</span><span class="st">&quot;</span>
+        <span class="fu">rm</span> <span class="st">&quot;</span><span class="va">$i</span><span class="st">&quot;</span>
+    <span class="kw">fi</span>
+<span class="kw">done</span></code></pre></div>
 </div>
 <div id="error-example-1" class="section level4">
 <h4>Error example</h4>
@@ -556,7 +572,7 @@ Oxford Nanopore GridION</code></pre></div>
 <p>This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_*.tsv), genbank donwloaded file (seqids.txt) and downloaded file from NCBI SRA (metadata-.*-processed-ok.tsv). You can run this R script directly from the command line. You will need to supply 2 pieces of information as options / flags when running the script.</p>
 <p><strong>Script name:</strong> submission_completed_metadata.R<br />
 <strong>Input files in path:</strong> metadata-*-processed-ok.tsv, seqids.txt, and gisaid_hcov-19_*.tsv<br />
-<strong>Options / flags:</strong> required to fill in all. The code will check spelling on the sequencing information and will error out if something is misspelled (options in #2 below)</p>
+<strong>Options / flags:</strong> required to fill in all. The code will check if the user specificed both options or it will error out.</p>
 <ol style="list-style-type: decimal">
 <li>-p | --path = path/to/seq_metadata/files # This also sets the working directory to write files</li>
 <li>-s | --submitter_name = submitter name</li>
@@ -584,6 +600,23 @@ mandy.waters</code></pre></div>
 <ol style="list-style-type: decimal">
 <li>Compiled metadata for submission excel: final_submission_tracking_date_metadata.tsv (e.g. final_submission_tracking_2021-07-31_metadata.tsv)</li>
 </ol>
+</div>
+<div id="error-example-3" class="section level4">
+<h4>Error example</h4>
+<p>This is an example of an error message that's missing the -s option</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">./submission_completed_metadata.R</span> -p /home/mandy_waters/metadata
+
+<span class="ex">working</span> directory:
+<span class="ex">/home/mandy_waters/test_metadata</span>
+
+<span class="ex">submitter</span> name:
+<span class="ex">NA</span>
+
+<span class="ex">ERROR</span>: you did not specify all varialbles. Please supply all values
+
+<span class="ex">Error</span> in is.data.frame(x) <span class="bu">:</span> object <span class="st">'ncbi_biosample_metadata'</span> not found
+<span class="ex">Calls</span>: write.table -<span class="op">&gt;</span> is.data.frame
+<span class="ex">Execution</span> halted</code></pre></div>
 </div>
 </div>
 
