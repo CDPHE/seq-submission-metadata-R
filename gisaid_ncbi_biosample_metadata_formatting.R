@@ -6,7 +6,7 @@
 # Usage (short) = ./gisaid_ncbi_biosample_metadata_formatting.R -m "path/to/metadata_sheets" -f fasta_file.fa -s submitter_name -t "sequencing type"
 # Usage (long) = ./gisaid_ncbi_biosample_metadata_formatting.R --metadata "path/to/metadata_sheets"  --fasta_name fasta_file.fa --submitter_name submitter_name --seq_type "sequencing type"
 # Usage notes: only strings with spaces need quotes
-# Usage example = ./gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters -f GISAID_upload_sequences.fa -s mandy_waters -t "Oxford Nanopore GridION"
+# Usage example = ./gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/metadata -f GISAID_upload_sequences.fa -s mandy_waters -t "Oxford Nanopore GridION"
 
 # load packages, but don't print the messages to terminal
 suppressPackageStartupMessages(require(optparse))
