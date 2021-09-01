@@ -126,7 +126,7 @@ which Rscript
 
 Update the shebang line in the script to point to your specific directory.  I used vim to edit the first line of the R script file.  Make sure to keep the '#!' 
 
-Now make the R sscripts executable (for some reason R scripts do not default as executable)
+Now make the R scripts executable (for some reason R scripts do not default as executable)
 ```{bash, "chmod", echo=TRUE, eval=FALSE}
 chmod +x gisaid_ncbi_biosample_metadata_formatting.R
 ```
@@ -396,7 +396,7 @@ Execution halted
 This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_\*.tsv), genbank donwloaded file (seqids.txt) and downloaded file from NCBI SRA (metadata-.\*-processed-ok.tsv). You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script. 
 
 **Script name:** submission_completed_metadata.R  
-**Input files in path:** metadata-\*-processed-ok.tsv, seqids.txt, and gisaid_hcov-19_\*.tsv  
+**Input files in path:** metadata-\*-processed-ok.tsv, seqids.txt (sometimes GenBank sends this file as accessions.txt - please change to seqids.txt), and gisaid_hcov-19_\*.tsv  
 **Options / flags:** required to fill in all.  The code will check if the user specificed both options or it will error out. 
 
 1. -p | --path = path/to/seq_metadata/files # This also sets the working directory to write files

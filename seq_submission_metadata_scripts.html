@@ -338,7 +338,7 @@ summary {
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">which</span> Rscript
 <span class="co">#If R is installed it will print something like /usr/bin/Rscript</span></code></pre></div>
 <p>Update the shebang line in the script to point to your specific directory. I used vim to edit the first line of the R script file. Make sure to keep the '#!'</p>
-<p>Now make the R sscripts executable (for some reason R scripts do not default as executable)</p>
+<p>Now make the R scripts executable (for some reason R scripts do not default as executable)</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">chmod</span> +x gisaid_ncbi_biosample_metadata_formatting.R</code></pre></div>
 <p>Now install the packages as outlined in the 'Install packages' tab.</p>
 </div>
@@ -571,7 +571,7 @@ Oxford Nanopore GridION</code></pre></div>
 <h4>Useage</h4>
 <p>This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_*.tsv), genbank donwloaded file (seqids.txt) and downloaded file from NCBI SRA (metadata-.*-processed-ok.tsv). You can run this R script directly from the command line. You will need to supply 2 pieces of information as options / flags when running the script.</p>
 <p><strong>Script name:</strong> submission_completed_metadata.R<br />
-<strong>Input files in path:</strong> metadata-*-processed-ok.tsv, seqids.txt, and gisaid_hcov-19_*.tsv<br />
+<strong>Input files in path:</strong> metadata-*-processed-ok.tsv, seqids.txt (sometimes GenBank sends this file as accessions.txt - please change to seqids.txt), and gisaid_hcov-19_*.tsv<br />
 <strong>Options / flags:</strong> required to fill in all. The code will check if the user specificed both options or it will error out.</p>
 <ol style="list-style-type: decimal">
 <li>-p | --path = path/to/seq_metadata/files # This also sets the working directory to write files</li>
