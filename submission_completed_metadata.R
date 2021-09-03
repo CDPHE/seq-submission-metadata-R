@@ -55,9 +55,9 @@ if(!is.na(opt$path) & !is.na(opt$submitter_name)){
     gisaid_split = gisaid_in %>% separate(Virus.name, c(NA,NA,"accession_short", "year"), sep = "/", remove = FALSE)
     gisaid_filtered = gisaid_split[gisaid_split$accession_short %in% ncbi_split$accession_short,]
     ncbi_gisaid_merge = merge(x=ncbi_split, y=gisaid_filtered[,c(1:5,15:16)], by = "accession_short", all.x=TRUE)
-    genbank = read.delim("seqids.txt", header=TRUE)
-    #genbank_split = genbank %>% separate(V1, c("sub","Virus.name"), sep = " ", remove = FALSE)
-    ncbi_gisaid_genbank_merge = merge(x=ncbi_gisaid_merge, y=genbank[2:3], by.x = "Virus.name", by.y = "Sequence ID", all.x = TRUE)
+    genbank = read.delim("seqids.txt", header=FALSE)
+    genbank_split = genbank %>% separate(V1, c("sub","Virus.name"), sep = " ", remove = FALSE)
+    ncbi_gisaid_genbank_merge = merge(x=ncbi_gisaid_merge, y=genbank_split[,3:4], by = "Virus.name", all.x = TRUE)
     ncbi_gisaid_genbank_merge_split = ncbi_gisaid_genbank_merge %>% separate(accession_short, c(NA,NA,"cdphe_accesssion"), sep = "-", remove = FALSE)
                                                                              
     col_order <- c("cdphe_accesssion", "Virus.name", "accession_short", "title", "platform", "Collection.date", "Lineage", "Clade", "bioproject_accession", "biosample_accession", "accession", "V2", "Accession.ID")
