@@ -1,5 +1,5 @@
 ---
-title: "REAME: R scripts for sequence submission"
+title: "REAME: SARS-CoV-2 sequence submission process"
 author:
 - Mandy Waters
 - CDPHE Contractor
@@ -12,8 +12,204 @@ output:
 fontsize: 12pt
 ---
 
+```{r "load_packages", include=FALSE, message=FALSE}
+  library(knitr)
+  library(kableExtra)
+  library(png)
+  library(grid)
+```
+
 ###Goals
-The objective of this code is to automate the creation of metadata tables for GISAID, NCBI Biosample, NCBI SRA, NCBI Genbank, and data for CDPHE tracking (all public IDs linked).  This document will outline the following items:
+Provide a details overview of SARS-CoV-2 to GISAID, NCBI BioSample, NCBI SRA, and NCBI GenBank. This document will take CDPHE colleagues through initial set up on a GCP VM running Ubuntu 18.04, process / pipeline flow, and scripts developed to automate metadata genereation. Scripts are availble on the CDPHE [Github](https://github.com/CDPHE/seq-submission-metadata-R). This section will cover the following items:
+
+1. Getting set up with software and accounts (GISAID and NCBI)  
+2. High level overview and process  
+3. General information
+
+###Set up and software {.tabset .tabset-fade .tabset-pills}
+####Overview
+Users will need to create accounts with GISAID and NCBI, install software, and complete some prliminary steps before running the sequence submission pipeline.  Please follow all instructions in subsequent tabs to get set up.
+
+####GISAID Account
+Navigate to GISAID's registration page: [link](https://www.gisaid.org/registration/register/).  
+Click on the 'register' button on the bottom right corner of the page.  Fill in with your personal and CDPHE info:  
+
+Institution: Colorado Department of Public Health and Environment  
+Department: Microbiology   
+Address: 8100 E Lowry Blvd Denver CO 80230  
+email: CDPHE email  
+
+They will send you an email to confirm your registration with a link you need to click on. Then you will get another email confirming your successful registration.
+
+####NCBI Account
+NCBI has a new login method where you use your gmail (CDPHE email) to sign in and authenticate. Make sure your the keychain for your browser is for your CDPHE email otherwise it will error out. I had some intermitent issues getting proxy errors and such, but kept refreshing until it worked. Follow the instructions given by NCBI to create a new account. NCBI will send you a confirmation email once they've processed your request.  
+
+Navigate to NCBI's registration page: [link](https://account.ncbi.nlm.nih.gov/signup/).  
+
+Institution: Colorado Department of Public Health and Environment  
+Department: Microbiology   
+Address: 8100 E Lowry Blvd Denver CO 80230  
+email: CDPHE email  
+back-up email: personal email
+
+####Software
+
+Programs to download/install on your VM for the submission process:  
+1. [Atom](https://flight-manual.atom.io/getting-started/sections/installing-atom/) - or your other favorite Linux Text Editor    
+2. [Seqtk](https://github.com/lh3/seqtk): parsing and editing fasta files.  Link takes you to a github repo with a readme  
+3. [SeqKit](https://bioinf.shenwei.me/seqkit/download/): parsing and editing fasta files  
+4. [VADR](https://github.com/StaPH-B/staphb_toolkit): is part of the staphb-tk that you installed in the Getting Started document  
+5. [MAFFT](https://mafft.cbrc.jp/alignment/software/linux.html): MSA.  Molly's version of indel_finder as of Sept 3, 2021 runs MAFFT pairwise for each sample in your batch, but might be good to have a local copy   
+6. [IGV](https://software.broadinstitute.org/software/igv/download): checking read coverage  
+7. [Indel_finder.py](https://github.com/CDPHE/sars-cov-2_indel_finder): is on the CDPHE github page  
+8. Samtools: working and indexing alignment (bam) files
+
+```{bash, "install_samtools", echo=TRUE, eval=FALSE}
+# I have conda installed and therefore was able to install samtools with conda
+conda install -c bioconda samtools
+```
+
+9. Aspera Connect Ascp: gsutil cp -r gs://laura-sandbox/aspera-connect/ . Then you can fin ascp in aspera/connect/bin
+10. rename_fasta.py: might be good to have, but Molly's modifications to indel_finder as of Sept 3, 2021 takes in multi-fasta, so this script isn't needed.  Can be accessed using: gsutil cp gs://laura-terra/rename_fasta.py .  
+
+###Overview of process
+Below is a flowchart showing the major steps in submitting SARS-CoV-2 samples to GISAID and NCBI.  A ppt version of this diagram can be found the CDPHE [Github](https://github.com/CDPHE/seq-submission-metadata-R) as seq_upload_flowchart.pptx
+
+```{r, "overview_flowchart", fig.width=8, fig.height=5, fig.align = "center", echo=FALSE, warning=FALSE}
+img <- readPNG("/Users/water157/Desktop/OneDrive - Pepsico/covid/seq_sub_overview.png")
+grid.raster(img)
+```
+
+###General information {.tabset .tabset-fade .tabset-pills}
+####Finding data
+Special call out to Laura Bankers for most of the below content
+
+**Overview:** All sequencing data, intermediate files, alignments (bam files), and assemblies are stored in the google bucket gs://covid_terra in the SNP Linux project on GCP. Inside that bucket, there is a directory for each sequencing run, and inside that directory are all of the raw data and necessary files for every sample sequenced on that run. Sequencing run directories are named based on the platform + run id number. Those beginning with COVSEQ_ are paired-end Illumina Miseq runs, those beginning with COVMIN_ are Oxford Nanopore GridION runs, NEXSEQ_ are single-end NextSeq runs, and COVARC are archived samples from earlier in the pandemic that we are now going back to and are sequenced on either MiSeq or GridION. The numbers after the underscore are the run id numbers (e.g. COVMIN_0009 is nanopore run 0009).  For submissions you will need the consensus genome fasta files, the raw reads, and the metadata. If you need to go back and check the validity of some SNP or indels calls, you may also need to bam files  
+
+**Metadata:** For all COVMIN and NEXSEQ runs, and all COVSEQ runs from COVSEQ_0062rq and greater, metadata is found in the results_RUNNAME_RUNDATE file e.g. (results_COVMIN_0009_2021-04-27), which are pushed to a shared Google Drive gs://covid_terra/COVSEQ_NNNN/terra_outputs/COVSEQ_NNNN_sequence_assembly_metrics.csv  
+
+**Consensus genome fasta files:** the final consensus genome fasta files to be submitted are named accessionid_renamed_consensus.fa (e.g. 2100213088_consensus_renamed.fa) and is located in gs://covid_terra/run_directory/terra_outputs/assemblies/ (e.g. gs://covid_terra/COVMIN_0009/terra_outputs/assemblies/)  
+
+**Raw reads:** For Illumina MiSeq and NextSeq runs (COVSEQ and NEXSEQ), raw reads for each sample on the run can be found in gs://covid_terra/COVSEQ_NNNN/fastq_files/. For nanopore runs (COVMIN), the fastq files for each sample are in separate directories that are named based on each samples barcode (e.g. gs:// covid_terra/COVMIN_0009/fastq_pass/barcode02)  
+
+**Bam files:** bam files can be found in gs:// covid_terra/COVMIN_0009/terra_outputs/alignments)  
+
+**Extra information:** 
+
+1. early COVMIN runs were re-analyzed due to workflow updates. The final results for these runs are in “terra_outputs_rr” (be sure to use files in the _rr directories in these cases). The underlying directory structure in the _rr directory is the same as the other output directories  
+2. NCBI BioSample only lets you submit up to 1000 samples at a time – So I tend to just maintain batch numbers of up to 1000 sample throughout the entire process   
+3. GenBank only allows you to select a single sequencing technology for an entire submission. So only include a single sequencing platform in a given batch (i.e. up to 1000 sample from only Illumina MiSeq runs)
+
+####Tracking submissions
+Laura has created an [excel document](https://docs.google.com/spreadsheets/d/1n9NzJNrqIHP9Lct_MZuSnOv3Qn1JCZsI/edit#gid=331506794) to track which projects / batches have not been submitted, are in process, and are completed as well as tabs that outlines metadata sheets necessary for GISAID, BioSample, SRA, and GenBank (R scripts make these).
+
+Sumbitters can add their initals next to the projects they are working on in the in the 'Notes' column in 'NOT_submitted' tab to ensure mulitple submitters aren't working on the same projects.  While we are catching up we are submitting samples  we are having GenBank reject samples when they find errors.  Add these samples to the 'ONGOING_submissions' tab and we will go back when we are more caught up. Once the samples are submitted to all public databases then all concatted metadata are put into the 'COMPLETED_submissions' tab.
+
+####GISAID submission
+
+Submit your sequence to GISAID
+
+1. The metadata file needed will be written by the R script gisaid_ncbi_biosample_metadata_formatting.R with all columns headers with missing data For any fields that we don’t fill out  
+2. Login to your [GISAID account](https://www.gisaid.org/), then go to the EpiCoV tab, then select > batch upload (you can ignore the CLI notification window that will pop up because the standard submission method is super easy. Upload your metadata csv, upload your fasta, and select “check and submit"    
+3. You will receive an email once your sequences have been processed with those that have been released and another if GISAID finds any errors. They will either ask you to email them back with coverage information or respond by accessing the 'unreleased' tab on your GISAID account. If what gets kicked back does not match something that was already flagged by VADR, then check the bam file in IGV. GISAID may either just publish the sequences based on your or response email, or they may ask you to resubmit the ones that were flagged
+
+    Note that the email you get once the data are processed will contain all the GISAID accessions, but it will not say what samples they are linked to, so to get that information as well as Pangolin/Nextclade lineage information, you will need to go back to your gisaid account > search > fill in the submission date, and then download sequence technology metadata file.
+
+####BioSample submission info
+
+Submit to NCBI BioSample
+
+1. Get metadata file made from gisaid_ncbi_biosample_metadata_formatting.R. Make sure you use BioProject PRJNA686984.  
+2. Login to NCBI and go the submission portal: https://submit.ncbi.nlm.nih.gov/subs/
+3. Go to My Submissions  > BioSample > New Submission  
+4. Fill out the submitter info with your state email as the primary email and fill out institutional information as follows:
+
+```{r, "bioosample_flowchart", fig.width=8, fig.height=5, fig.align = "center", echo=FALSE, warning=FALSE}
+img <- readPNG("/Users/water157/Desktop/OneDrive - Pepsico/covid/biosample_info.png")
+grid.raster(img)
+```
+
+6. Under General Information select:  
+    + “Release immediately following processing”  
+    + “BatchMultiple BioSamples” **Note that you are only allowed to submit up to 1000 Biosamples at a time  
+7. Under Sample Template select “SARS-CoV-2: clinical or host-associated”  
+8. Under Attributes you will upload your metadata tsv file  
+9. Under Review and Submit, double check that everything looks correct and then hit submit  
+    
+Once your BioSample submission has been fully processed, you can proceed to NCBI SRA submission (you will need for BioSample SAMNNNNNNNN accession ids for SRA) – this generally takes less than an hour.
+
+####SRA submission info
+
+Submitting to NCBI SRA
+
+1. Download the raw fastq files from the google bucket to you VM.
+    + There will be two fastq files for each sample for Illuimina MiSeq runs (which are paired-end), and _R1 and an R2 fastq file. These are located in gs:// covid_terra/COVSEQ_NNNN/fastq_files/ and are all named as “accesionid_R1_001.fastq.gz” and “accesionid_R1_002.fastq.gz”
+
+Code to pull reads for COVSEQ
+```{bash, "download_illumina", echo=TRUE, eval=FALSE}
+# Pull the fastq files from the google bucket onto your VM
+Add code after it is tested
+```
+
+ Code to pull reads for NEXSEQ 
+```{bash, "download_illumina_next", echo=TRUE, eval=FALSE}
+# Pull the fastq files from the google bucket onto your VM
+while read acc path
+do
+gsutil -m cp $path .
+done < NEXSEQ_XXX_terra_data_table.tsv
+```
+
+    There will be a single file for Illumina NextSeq runs (which are single-end). These are located in gs:// covid_terra/NEXSEQ_NNN/fastq_files/ are all named as “accesionid.fastq.gz”
+    
+Nanopore runs have a large number of fastq files associated with each sample. They are organized into barcode directories – one barcode directory per sample. E.g.: gs:// covid_terra/COVMIN_0009/fastq_pass/barcode02 contains all the fastq files for the sample that was barcoded with barcode02. 
+
+Use the script get_cat_gzip_fastq.sh on [Github](https://github.com/CDPHE/seq-submission-metadata-R) to compile all the barcodes into a single sample. This will also gzip the files so the names match the output from the R scripts  
+
+2. Prepare your metadata file using the R script: ncbi_sra_metadata_formatting.R
+3. Go to your NCBI Submissions Portal > Sequence Read Archive > New Submission
+4. Submitter info is filled out the same way as for the BioSample submission
+5. Fill out General Information as in the image below (be sure to use BioProject PRJNA686984)
+
+```{r, "sra_info", fig.width=8, fig.height=5, fig.align = "left", echo=FALSE, warning=FALSE}
+img <- readPNG("/Users/water157/Desktop/OneDrive - Pepsico/covid/sra_gen_info.png")
+grid.raster(img)
+```
+
+6. Under the SRA Metadata tab, upload your metadata tsv fromncbi_sra_metadata_formatting.R
+7. Under Files, select “FTP or Aspera Command Line file preload”
+    + Read the Aspera Commandline instructions tab, and download the key file to your VM
+    + Go back to your VM commandline window, cd into the directory containing your fastq files and run: 
+    
+```{bash, "sra_upload", echo=TRUE, eval=FALSE}
+# SRA will provide the rest of subasp@upload.ncbi.nlm.nih.gov:upload on your upload page
+/path/to/aspera-connect/connect/bin/ascp -i /path/to/aspera.openssh -d sequence_dir subasp@upload.ncbi.nlm.nih.gov:uploads/...
+```
+
+8. Once you see that the upload has completed in your command line window, go back to your submission and click the “select preload folder” button. Select the folder containing your fastq files, and then “use selected folder” (make sure you refresh until it lists the same number of files as you plant to submit).
+9. Under Review & Submit, make sure that everything looks correct and then hit submit.
+10. Once the submission is processed, you will receive an email – this can take a few days because the BioProject is set up such that all SRA submission go through NCBI’s human data scrubbing pipeline. Once this completes, you will receive the SRR accession ids that you need for Genbank
+
+####GenBank submission info
+1. Go to you NCBI Submissions portal > GenBank > New Submission  
+2. Under Submission Type > What do your sequences contain? Selection “SARS-CoV2, Influenza…” then for Which virus? Also select “SARS-CoV-2.” You can leave the submission title blank  
+3. Submitter Information is the same as for everything else  
+4. Under sequencing technology select either “Illumina” for an batch of MiSeq or NextSeq samples, or “Other” if the batch is of assemblies from nanopore data (then put Oxford Nanopore in the field that appears). Then select assembled sequences
+    + For Assembly information for Illumina data put minimap2 v.2.1, and iVar v.1.3.1
+    + For Assembly information Nanopore assemblies put Arctic MinION JAN-2020
+5. Under Sequences, select “release immediately following processing”
+6. Then upload the fasta file you generated (GenBank doesn't accept dashes and you need to add the NCBI project number so GenBank adds it to the right project)
+7. Select 'None of these' for naming convention
+8. Select 'String of N's represents missing sequence against a reference'
+9. Depending on where we are against historic data either select 'yes' - Genbank will remove these from your submission and release the rest.  You'll need to track these to reupload later.  If you select 'no' then you will go back and forth with GenBank with coverage information etc.
+10. Under the “Source Modifiers” tab you will upload your GenBank metadata tsv file
+11. Under References you will List: Laura Bankers, Molly C. Hetherington-Rauth, Diana Ir, Alexandria Rossheim, Michael A. Martin, Mandy Waters, Shannon R. Matzinger, Sarah Elizabeth Totten, Emily A. Travanty – If names are not correct, please change them in the gisaid template section of the submissions google sheet, so that they are up to date. 
+    + You have to manually put these in the first time and then you can select and apply this list for later submissions 
+12. Then select “Unpublished” and then continue
+13. Under Review and Submit, make sure everything looks correct, them submit
+
+###Detailed instructions for running R code
+The objective of this code is to automate the creation of metadata tables for GISAID, NCBI Biosample, NCBI SRA, NCBI Genbank, and data for CDPHE tracking (all public IDs linked).  This section of the document will outline the following items:
 
 1. Installing R version 4 on GCP VM with Linux Ubuntu 18.04
 2. Preparing the scripts and installing packages
@@ -31,13 +227,6 @@ You will need at least R version 4 to load the packages used in these scripts. I
 
 ####First R install
 Click [here](https://www.digitalocean.com/community/tutorials/how-to-install-r-on-ubuntu-18-04-quickstart) to go to page with instuctions, which are also outlined below. The code below assumes you are running Ubuntu 18.04. You will need a different repository file if you are running a different version. This repository file will install regardless of your version and then will throw errors / won't update when you install a different version.
-
-```{r "load_packages", include=FALSE, message=FALSE}
-  library(knitr)
-  library(kableExtra)
-  library(png)
-  library(grid)
-```
 
 ```{bash, "install_R", echo=TRUE, eval=FALSE}
 # Step 1 — Add GPG Key
@@ -162,14 +351,14 @@ Now you're ready to run the script R scripts
 
 ###GISAID and NCBI Biosample {.tabset .tabset-fade .tabset-pills}
 ####Useage
-In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.\*.csv in directory), concats the  files, filters for samples > 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample as well as a file that lists the current sample names and GISAID formatted names (users can then use awk command to rename samples). You can run this R script directly from the command line.  You will need to supply 4 pieces of information as options / flags when running the script. 
+In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.\*.csv in directory), concats the  files, filters for samples > 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample, a file that lists the current sample names and GISAID formatted names (users can then use awk command to rename samples), and a file if any samples are missing the collection date. You can run this R script directly from the command line.  You will need to supply 4 pieces of information as options / flags when running the script. 
 
 **Script name:** gisaid_ncbi_biosample_metadata_formatting.R  
-**Input file regex:** results_.\*.csv  
+**Input file regex:** results_.\*.tsv  
 **Options / flags:** required to fill in all.  The code will check spelling on the sequencing information and will error out if something is misspelled (options in #4 below)  
 
 1. -m | --metadata = path/to/seq_metadata/files # This also sets the working directory to write files
-2. -f | --fasta_name = name_fasta_file_to_submit.fa
+2. -f | --fasta_name = name_fasta_file_to_submit.fa # name of fasta file you will submit to GISAID
 3. -s | --submitter_name = gisaid_submitter_name
 4. -t | --seq_type = sequencing_type (Oxford Nanopore GridION, Illumina MiSeq, Illumina NextSeq)
 
@@ -190,7 +379,7 @@ In short, the script takes in user specified information to pull all sequencing 
 ```
 
 **Output to terminal:**
-Script prints the strings the user input for you to check.  If you don't privde values for all flags then the script will error out and tell you which flag(s) are missing.  The script will also error out if the sequence type name is misspelled
+Script prints the strings the user input for you to check.  If you don't privde values for all flags then the script will error out and tell you which flag(s) are missing.  The script will also error out if the sequence type name is misspelled.  A warning will print that lists the accession name, coverage, and project number for samples that are missing a collection date.  It will not error out, but will print this info and write it to a file for users to review.
 
 You should see something like the following regardless of short or long flag names
 ```{r, "r_out", echo=TRUE, eval=FALSE}
@@ -214,6 +403,7 @@ Oxford Nanopore GridION
 1. GISAID formatted file: gisaid_submission_date_metadata.csv (e.g. gisaid_submission_2021-07-03_metadata.csv)
 2. NCBI Biosample formatted file: ncbi_biosample_submission_date_metadata.tsv (e.g. ncbi_biosample_submission_2021-07-03_metadata.tsv)
 3. File to convert current fasta names to GISAID format (fasta_rename_accession_to_gisaid_id.csv)
+4. Missing collection date: only writes this if samples are missing a collection date (e.g. samples_missing_collection_date_2021-07-03.tsv)
 
 I use the following awk command to replace the accession IDs in the fasta with GISAID accepted names.  These samples have been run through all the steps through indel finder.  After this the samples are run through VADR.
 ```{bash, "remplace_gisaid_ids", echo=TRUE, eval=FALSE}
