@@ -1,4 +1,4 @@
-#!/usr/bin/Rscript
+#!/usr/local/bin/Rscript
 
 # Mandy Waters
 # July 2021
@@ -44,7 +44,7 @@ if (opt$v) {
   cat(opt$submitter_name)
   cat("\n\nsequencing type:\n")
   cat(opt$seq_type)
-  cat("\n\n")
+  cat("\n")
 }
 
 # if all options are filled in then fill in the metadata otherwise error out
@@ -56,11 +56,22 @@ setwd(opt$metadata)
 date = Sys.Date()
 
 # Reading in all metadata sheets, subsetting out the columns needed, pulling samples with >= 50% coverage
-metadata_readin = ldply(list.files(pattern = "results_.*.csv"), read.csv, header=TRUE, na.strings = c("","sample failed assembly"), check.names = FALSE)
+metadata_readin = ldply(list.files(pattern = "results_.*.tsv"), read.delim, header=TRUE, na.strings = c("","sample failed assembly"), check.names = FALSE)
 cols_to_keep = as.data.frame(c("accession_id", "percent_non_ambigous_bases", "collection_date", "fasta_header", "seq_run"))
 colnames(cols_to_keep) = "col_names"
 metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
+patterns <- c("Blank", "NC")
+metadata_no_blank_nc = filter(metadata_subset_cols, !grepl(paste(patterns, collapse="|"), accession_id))
 metadata_50_cov = metadata_subset_cols[metadata_subset_cols$percent_non_ambigous_bases >= 50.0,]
+missing_collection_date = as.data.frame(metadata_no_blank_nc[is.na(metadata_no_blank_nc$collection_date),c(1,2,5)])
+colnames(missing_collection_date) = c("accession_id", "percent_non_ambigous_bases", "seq_run")
+
+if(length(missing_collection_date >0)){
+cat("\n\nWARNING: the samples below are missing a collection date:\n")
+print(missing_collection_date, row.names = FALSE)
+cat('\n')
+write.table(missing_collection_date, paste("samples_missing_collection_date", date, ".tsv", sep="_"), row.names = FALSE, quote = FALSE, sep = '\t')
+}
 
 # Creating an eepty matrix to fill in with metadata in GISAID format
 gisad_metadata = as.data.frame(matrix("",ncol=29,nrow=nrow(metadata_50_cov)))
