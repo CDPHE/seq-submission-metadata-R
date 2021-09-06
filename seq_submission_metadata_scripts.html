@@ -298,6 +298,7 @@ back-up email: personal email</p>
 <span class="ex">conda</span> install -c bioconda samtools</code></pre></div>
 <ol start="9" style="list-style-type: decimal">
 <li>Aspera Connect Ascp: gsutil cp -r gs://laura-sandbox/aspera-connect/ . Then you can fin ascp in aspera/connect/bin</li>
+<li><a href="https://ormbunkar.se/aliview/#DOWNLOAD">Aliview</a> - review MSA. After install you can open 'aliview' by just typing aliview on your VM terminal</li>
 <li>rename_fasta.py: might be good to have, but Molly's modifications to indel_finder as of Sept 3, 2021 takes in multi-fasta, so this script isn't needed. Can be accessed using: gsutil cp gs://laura-terra/rename_fasta.py .</li>
 </ol>
 </div>
@@ -335,7 +336,7 @@ back-up email: personal email</p>
 <h4>GISAID submission</h4>
 <p>Submit your sequence to GISAID</p>
 <ol style="list-style-type: decimal">
-<li>The metadata file needed will be written by the R script gisaid_ncbi_biosample_metadata_formatting.R with all columns headers with missing data For any fields that we don’t fill out<br />
+<li>The metadata file needed will be written by the R script gisaid_ncbi_biosample_metadata_formatting.R with all columns headers with missing data for any fields that we don’t fill out<br />
 </li>
 <li>Login to your <a href="https://www.gisaid.org/">GISAID account</a>, then go to the EpiCoV tab, then select &gt; batch upload (you can ignore the CLI notification window that will pop up because the standard submission method is super easy. Upload your metadata csv, upload your fasta, and select “check and submit&quot;<br />
 </li>
