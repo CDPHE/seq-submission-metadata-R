@@ -70,7 +70,8 @@ conda install -c bioconda samtools
 ```
 
 9. Aspera Connect Ascp: gsutil cp -r gs://laura-sandbox/aspera-connect/ . Then you can fin ascp in aspera/connect/bin
-10. rename_fasta.py: might be good to have, but Molly's modifications to indel_finder as of Sept 3, 2021 takes in multi-fasta, so this script isn't needed.  Can be accessed using: gsutil cp gs://laura-terra/rename_fasta.py .  
+10. [Aliview](https://ormbunkar.se/aliview/#DOWNLOAD) - review MSA.  After install you can open 'aliview' by just typing aliview on your VM terminal
+11. rename_fasta.py: might be good to have, but Molly's modifications to indel_finder as of Sept 3, 2021 takes in multi-fasta, so this script isn't needed.  Can be accessed using: gsutil cp gs://laura-terra/rename_fasta.py .  
 
 ###Overview of process
 Below is a flowchart showing the major steps in submitting SARS-CoV-2 samples to GISAID and NCBI.  A ppt version of this diagram can be found the CDPHE [Github](https://github.com/CDPHE/seq-submission-metadata-R) as seq_upload_flowchart.pptx
@@ -109,7 +110,7 @@ Sumbitters can add their initals next to the projects they are working on in the
 
 Submit your sequence to GISAID
 
-1. The metadata file needed will be written by the R script gisaid_ncbi_biosample_metadata_formatting.R with all columns headers with missing data For any fields that we don’t fill out  
+1. The metadata file needed will be written by the R script gisaid_ncbi_biosample_metadata_formatting.R with all columns headers with missing data for any fields that we don’t fill out  
 2. Login to your [GISAID account](https://www.gisaid.org/), then go to the EpiCoV tab, then select > batch upload (you can ignore the CLI notification window that will pop up because the standard submission method is super easy. Upload your metadata csv, upload your fasta, and select “check and submit"    
 3. You will receive an email once your sequences have been processed with those that have been released and another if GISAID finds any errors. They will either ask you to email them back with coverage information or respond by accessing the 'unreleased' tab on your GISAID account. If what gets kicked back does not match something that was already flagged by VADR, then check the bam file in IGV. GISAID may either just publish the sequences based on your or response email, or they may ask you to resubmit the ones that were flagged
 
