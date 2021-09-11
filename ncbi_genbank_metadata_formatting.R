@@ -1,5 +1,3 @@
-#!/usr/bin/Rscript
-
 # Mandy Waters
 # July 2021
 # Script to read in gisaid and SRA data and write out genbank metadata

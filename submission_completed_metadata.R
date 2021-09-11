@@ -1,5 +1,3 @@
-#!/usr/bin/Rscript
-
 # Mandy Waters
 # July 2021
 # Script to pull in information needed to add content to COMPLETED_submissions_metadata tab in SUBMISSIONS_and_compiled_metadata.xlsx
