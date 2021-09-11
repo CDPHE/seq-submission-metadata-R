@@ -1,12 +1,10 @@
-#!/usr/local/bin/Rscript
-
 # Mandy Waters
 # July 2021
 # Script to read in COVID sequencing output metadata and write out a GISAID and NCBI biosample formatted metadata sheet for samples with >50% coverage
-# Usage (short) = ./gisaid_ncbi_biosample_metadata_formatting.R -m "path/to/metadata_sheets" -f fasta_file.fa -s submitter_name -t "sequencing type"
-# Usage (long) = ./gisaid_ncbi_biosample_metadata_formatting.R --metadata "path/to/metadata_sheets"  --fasta_name fasta_file.fa --submitter_name submitter_name --seq_type "sequencing type"
+# Usage (short) = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m "path/to/metadata_sheets" -f fasta_file.fa -s submitter_name -t "sequencing type" -r "rerun_file"
+# Usage (long) = Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata "path/to/metadata_sheets"  --fasta_name fasta_file.fa --submitter_name submitter_name --seq_type "sequencing type" --rerun_file /path/to/rerun_filename.tsv
 # Usage notes: only strings with spaces need quotes
-# Usage example = ./gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/metadata -f GISAID_upload_sequences.fa -s mandy_waters -t "Oxford Nanopore GridION"
+# Usage example = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/metadata -f GISAID_upload_sequences.fa -s mandy_waters -t "Oxford Nanopore GridION" -r /home/mandy_waters/rerun_samples_12Sep2021.tsv
 
 # load packages, but don't print the messages to terminal
 suppressPackageStartupMessages(require(optparse))
@@ -20,17 +18,19 @@ suppressPackageStartupMessages(require(stringr))
 
 option_list = list(
   make_option(c("-m", "--metadata"), action="store", default=NA, type='character',
-              help="path to metadata sheets"),
-  make_option(c("-f", "--fasta_name "), action="store", default=NA, type='character',
-              help="fasta file ename to upload"),
+              help="REQUIRED: path to metadata sheets"),
+  make_option(c("-f", "--fasta_name"), action="store", default=NA, type='character',
+              help="REQUIRED: fasta file name to upload to GISAID"),
   make_option(c("-s", "--submitter_name"), action="store", default=NA, type='character',
-              help="submitter name"),
+              help="REQUIRED: submitter name for GISAID"),
   make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
-              help="Should the program print extra stuff out? [default %default]"),
+              help="DEFAULT: should the program print extra stuff out? [default %default]"),
   make_option(c("-q", "--quiet"), action="store_false", dest="verbose",
-              help="Make the program not be verbose."),
+              help="OPTIONAL: Make the program not be verbose"),
+  make_option(c("-r", "--rerun_file"), action="store", default=NA, type='character',
+              help="REQUIRED: path and file name for text file with rerun information as downloaded from Google Drive"),
   make_option(c("-t", "--seq_type"), action="store", default=NA, type='character',
-              help="sequencing type as a string in quotes")
+              help="REQUIRED: sequencing type as a string in quotes that has to match 'Illumina MiSeq', 'Illumina NextSeq', or 'Oxford Nanopore GridION'")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
@@ -38,17 +38,19 @@ if (opt$v) {
   # print the variables to the terminal
   cat("\nmetadata path:\n")
   cat(opt$metadata)
-  cat("\n\nname of fasta file to submit:\n")
+  cat("\n\nname of fasta file to submit to GISAID:\n")
   cat(opt$fasta_name)
-  cat("\n\nsubmitter name:\n")
+  cat("\n\nsubmitter name for GISAID:\n")
   cat(opt$submitter_name)
   cat("\n\nsequencing type:\n")
   cat(opt$seq_type)
-  cat("\n")
+  cat("\n\nname of rerun file:\n")
+  cat(opt$rerun_file)
+  cat("\n\n")
 }
 
 # if all options are filled in then fill in the metadata otherwise error out
-if(!is.na(opt$metadata) & !is.na(opt$submitter_name) & !is.na(opt$seq_type) & !is.na(opt$fasta_name)){
+if(!is.na(opt$metadata) & !is.na(opt$submitter_name) & !is.na(opt$seq_type) & !is.na(opt$fasta_name) & !is.na(opt$rerun_file)){
   if(opt$seq_type == "Illumina MiSeq" | opt$seq_type == "Illumina NextSeq" | opt$seq_type == "Oxford Nanopore GridION"){
 
 # set working directory
@@ -63,17 +65,68 @@ metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_k
 patterns <- c("Blank", "NC")
 metadata_no_blank_nc = filter(metadata_subset_cols, !grepl(paste(patterns, collapse="|"), accession_id))
 metadata_50_cov = metadata_subset_cols[metadata_subset_cols$percent_non_ambigous_bases >= 50.0,]
-missing_collection_date = as.data.frame(metadata_no_blank_nc[is.na(metadata_no_blank_nc$collection_date),c(1,2,5)])
-colnames(missing_collection_date) = c("accession_id", "percent_non_ambigous_bases", "seq_run")
+missing_collection_date = as.data.frame(metadata_no_blank_nc[is.na(metadata_no_blank_nc$collection_date),c(1,2,3,5)])
+collection_date_wrong = as.data.frame(metadata_no_blank_nc[str_sub(metadata_no_blank_nc$collection_date,start=1,end=4) < 2020, c(1,2,3,5)])
+project_list = as.data.frame(unique(metadata_readin$seq_run))
+colnames(project_list) = "projects"
 
+# Read in the Re-run file and strip off info in parens in the first run column
+rerun_readin = read.delim(opt$rerun_file, header = TRUE)
+rerun_readin$first_run = gsub("\\s*\\([^\\)]+\\)","",as.character(rerun_readin$first_run))
+
+# Find if samples are part of the rerun set
+rerun_check = rerun_readin[rerun_readin$accession_id %in% metadata_readin$accession_id,c(1,2,3,4)]
+
+# Printing warnings and files for checks
+# missing collection date
 if(length(missing_collection_date >0)){
 cat("\n\nWARNING: the samples below are missing a collection date:\n")
 print(missing_collection_date, row.names = FALSE)
 cat('\n')
-write.table(missing_collection_date, paste("samples_missing_collection_date", date, ".tsv", sep="_"), row.names = FALSE, quote = FALSE, sep = '\t')
+write.table(missing_collection_date, paste("samples_missing_collection_date_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
 }
 
-# Creating an eepty matrix to fill in with metadata in GISAID format
+# wrong collection date
+if(length(collection_date_wrong > 0)){
+  cat("\n\nWARNING: the samples below have a collection date before 2020:\n")
+  print(collection_date_wrong, row.names = FALSE)
+  cat('\n')
+  write.table(collection_date_wrong, paste("samples_wrong_collection_date_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
+}
+
+# rerun samples
+if(length(rerun_check > 0)){
+  cat("\n\nWARNING: the samples below have been rerun:\n")
+  print(rerun_check[,c(1,2,3)], row.names = FALSE)
+  cat('\n')
+  write.table(rerun_check, paste("samples_rerun_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
+}
+
+rerun_dup = rerun_check
+
+cat("Checking and deleting metadata for samples that have been re-run post projects in this batch\n")
+# Removing samples if this is the first round of sequencing
+for (i in 1:nrow(rerun_check)){
+  if(rerun_check[i,3] %in% project_list$projects){
+    cat("keeping: ")
+    cat(rerun_check[i,1])
+    cat("\n")
+    rerun_dup = rerun_dup[-(rerun_dup$accession_id == rerun_check[i,1]),]
+    next
+  }else{
+    metadata_50_cov = metadata_50_cov[metadata_50_cov$accession_id != rerun_check[i,1], ] 
+    cat("deleting: ")
+    cat(rerun_check[i,1])
+    cat("\n")
+  }
+}
+
+# files to delete
+if(length(rerun_dup > 0)){
+  write.table(rerun_dup, paste("samples_to_delete_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
+}
+
+# Creating an empty matrix to fill in with metadata in GISAID format
 gisad_metadata = as.data.frame(matrix("",ncol=29,nrow=nrow(metadata_50_cov)))
 colnames(gisad_metadata) = c("submitter","fn","covv_virus_name","covv_type","covv_passage","covv_collection_date","covv_location","covv_add_location","covv_host","covv_add_host_info","covv_gender","covv_patient_age","covv_patient_status","covv_specimen","covv_outbreak","covv_last_vaccinated","covv_treatment","covv_seq_technology","covv_assembly_method","covv_coverage","covv_orig_lab","covv_orig_lab_addr","covv_provider_sample_id","covv_subm_lab","covv_subm_lab_addr","covv_subm_sample_id","covv_authors","covv_comment","comment_type")
 
@@ -130,7 +183,7 @@ ncbi_biosample_metadata[i,6] = metadata_50_cov[i,3] # collection_date
   cat("ERROR: check the spelling of your sequence type input: sequence type should match 'Illumina MiSeq', 'Illumina NextSeq', or 'Oxford Nanopore GridION'\n\n")
   }
 } else {
-  cat("ERROR: you didn't specify all varialbles. Please supply all values\n\n") # print error messages
+  cat("ERROR: you didn't specify all varialbles. Please supply all required options. Type Rscript gisaid_ncbi_biosample_metadata_formatting.R -h for list of required options\n\n") # print error messages
 }
 
 write.table(ncbi_biosample_metadata, file=paste("ncbi_biosample_submission", date, "metadata.tsv", sep="_"), row.names = FALSE, quote = FALSE, sep = '\t')

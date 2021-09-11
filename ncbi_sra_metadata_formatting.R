@@ -1,5 +1,3 @@
-#!/usr/bin/Rscript
-
 # Mandy Waters
 # July 2021
 # Script to read in biosample data from NCBI and write out SRA metadata format
