@@ -434,7 +434,6 @@ deleting: 2101633590
 4. CONDITIONAL: Missing collection date only writes this if samples are missing a collection date (e.g. samples_missing_collection_date_2021-07-03.tsv)
 5. CONDITIONAL: Collection date before 2020 only writes if samples collection date is before 2020 (e.g. samples_wrong_collection_date_2021-09-11.tsv)
 6. CONDITIONAL: samples that have been rerun are listed if the accessions in your batch match accessions listed in the rerun file (e.g. samples_rerun_2021-09-11.tsv)
-7. CONDITIONAL: samples to delete file is written if you have the originally sequenced files in your batch of projects (samples_to_delete_2021-09-11.tsv)
 
 I use the following awk command to replace the accession IDs in the fasta with GISAID accepted names.  These samples have been run through all the steps through indel finder.  After this the samples are run through VADR.
 ```{bash, "remplace_gisaid_ids", echo=TRUE, eval=FALSE}
