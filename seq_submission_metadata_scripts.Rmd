@@ -421,9 +421,6 @@ WARNING: the samples below have been rerun:
    2101633590             NEXSEQ_043    NEXSEQ_048
 
 Checking and deleting metadata for samples that have been re-run post projects in this batch
-keeping: 2101450894
-keeping: 2101457196
-deleting: 2101633590
 ```
 
 **Output files:**

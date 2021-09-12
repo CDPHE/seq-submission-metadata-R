@@ -1,10 +1,11 @@
 
 for run in "$@"; do
 	echo $run
-	mkdir -p ${run}_fastq
-	cd ${run}_fastq
 	# downloands run data
 	gsutil -m cp gs://covid_terra/${run}/${run}_terra_data_table.tsv .
+	while read name gisaid proj; do
+		grep $name ${run}_terra_data_table.tsv >> ${run}_seqs_to_download.tsv
+	done < fasta_rename_accession_to_gisaid_id.tsv
 
 	while read p; do
 	  echo $p
@@ -19,6 +20,6 @@ for run in "$@"; do
 	 	 	gsutil cat ${path}/*.fastq > CO-CDPHE-${accession}.fastq
 	 	 	gzip CO-CDPHE-${accession}.fastq
 	 	 fi
-	done < <(tail -n +3 ${run}_terra_data_table.tsv)
+	done < ${run}_seqs_to_download.tsv
 
 done
