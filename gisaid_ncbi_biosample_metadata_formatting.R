@@ -80,7 +80,7 @@ rerun_check = rerun_readin[rerun_readin$accession_id %in% metadata_readin$access
 # Printing warnings and files for checks
 # missing collection date
 if(length(missing_collection_date >0)){
-cat("\n\nWARNING: the samples below are missing a collection date:\n")
+cat("\nWARNING: the samples below are missing a collection date:\n")
 print(missing_collection_date, row.names = FALSE)
 cat('\n')
 write.table(missing_collection_date, paste("samples_missing_collection_date_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
@@ -88,7 +88,7 @@ write.table(missing_collection_date, paste("samples_missing_collection_date_", d
 
 # wrong collection date
 if(length(collection_date_wrong > 0)){
-  cat("\n\nWARNING: the samples below have a collection date before 2020:\n")
+  cat("\nWARNING: the samples below have a collection date before 2020:\n")
   print(collection_date_wrong, row.names = FALSE)
   cat('\n')
   write.table(collection_date_wrong, paste("samples_wrong_collection_date_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
@@ -96,42 +96,31 @@ if(length(collection_date_wrong > 0)){
 
 # rerun samples
 if(length(rerun_check > 0)){
-  cat("\n\nWARNING: the samples below have been rerun:\n")
+  cat("\nWARNING: the samples below have been rerun:\n")
   print(rerun_check[,c(1,2,3)], row.names = FALSE)
   cat('\n')
   write.table(rerun_check, paste("samples_rerun_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
 }
 
-rerun_dup = rerun_check
+# Setting a function ni to be 'not in' for checking if parents have data
 
-cat("Checking and deleting metadata for samples that have been re-run post projects in this batch\n")
+cat("Checking and deleting metadata for samples that have been re-run after projects in this batch\n")
 # Removing samples if this is the first round of sequencing
 for (i in 1:nrow(rerun_check)){
-  if(rerun_check[i,3] %in% project_list$projects){
-    cat("keeping: ")
-    cat(rerun_check[i,1])
-    cat("\n")
-    rerun_dup = rerun_dup[-(rerun_dup$accession_id == rerun_check[i,1]),]
-    next
-  }else{
-    metadata_50_cov = metadata_50_cov[metadata_50_cov$accession_id != rerun_check[i,1], ] 
+metadata_50_cov = metadata_50_cov[!(metadata_50_cov$accession_id == rerun_check[i,1] & metadata_50_cov$seq_run != rerun_check[i,3]),] 
     cat("deleting: ")
     cat(rerun_check[i,1])
+    cat(",")
+    cat(rerun_check[i,2])
     cat("\n")
   }
-}
-
-# files to delete
-if(length(rerun_dup > 0)){
-  write.table(rerun_dup, paste("samples_to_delete_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
-}
-
+cat('\n')
 # Creating an empty matrix to fill in with metadata in GISAID format
 gisad_metadata = as.data.frame(matrix("",ncol=29,nrow=nrow(metadata_50_cov)))
 colnames(gisad_metadata) = c("submitter","fn","covv_virus_name","covv_type","covv_passage","covv_collection_date","covv_location","covv_add_location","covv_host","covv_add_host_info","covv_gender","covv_patient_age","covv_patient_status","covv_specimen","covv_outbreak","covv_last_vaccinated","covv_treatment","covv_seq_technology","covv_assembly_method","covv_coverage","covv_orig_lab","covv_orig_lab_addr","covv_provider_sample_id","covv_subm_lab","covv_subm_lab_addr","covv_subm_sample_id","covv_authors","covv_comment","comment_type")
 
-rename_fasta = as.data.frame(matrix("",ncol=2,nrow=nrow(metadata_50_cov)))
-colnames(rename_fasta) = c("accesion_id", "gisaid_name")
+rename_fasta = as.data.frame(matrix("",ncol=3,nrow=nrow(metadata_50_cov)))
+colnames(rename_fasta) = c("accesion_id", "gisaid_name", "proj_num")
 
 # Filling in columns whose values do not change or will be put in with options
 gisad_metadata$submitter = opt$submitter_name
@@ -156,10 +145,12 @@ for (i in 1:nrow(gisad_metadata)){
   gisad_metadata[i,3] = paste("hCoV-19/USA/CO-CDPHE-", metadata_50_cov[i,1], "/", str_sub(gisad_metadata[i,6],start=1,end=4),sep="") # covv_virus_name
   rename_fasta[i,1] = paste("CO-CDPHE-", metadata_50_cov[i,1], sep = "")
   rename_fasta[i,2] = paste("hCoV-19/USA/CO-CDPHE-", metadata_50_cov[i,1], "/", str_sub(gisad_metadata[i,6],start=1,end=4),sep="")
+  rename_fasta[i,3] = metadata_50_cov[i,5]
 }
 
 write.csv(gisad_metadata, file = paste("gisaid_submission", date, "metadata.csv",sep="_"), row.names = FALSE, quote = TRUE)
 write.csv(rename_fasta, "fasta_rename_accession_to_gisaid_id.csv", row.names = FALSE, quote = FALSE)
+write.table(rename_fasta, "fasta_rename_accession_to_gisaid_id.tsv", row.names = FALSE, quote = FALSE, sep = "\t")
 
 # Creating the NCBI biosample metadata table
 ncbi_biosample_metadata = as.data.frame(matrix("",ncol=48,nrow=nrow(metadata_50_cov)))
