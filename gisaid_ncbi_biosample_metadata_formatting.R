@@ -62,7 +62,7 @@ metadata_readin = ldply(list.files(pattern = "results_.*.tsv"), read.delim, head
 cols_to_keep = as.data.frame(c("accession_id", "percent_non_ambigous_bases", "collection_date", "fasta_header", "seq_run"))
 colnames(cols_to_keep) = "col_names"
 metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
-patterns <- c("Blank", "NC")
+patterns <- c("Blank", "NC", "NTC", "ExtractionPositive", "DiaplexPositive", "POS")
 metadata_no_blank_nc = filter(metadata_subset_cols, !grepl(paste(patterns, collapse="|"), accession_id))
 metadata_50_cov = metadata_subset_cols[metadata_subset_cols$percent_non_ambigous_bases >= 50.0,]
 missing_collection_date = as.data.frame(metadata_no_blank_nc[is.na(metadata_no_blank_nc$collection_date),c(1,2,3,5)])
@@ -104,17 +104,12 @@ if(length(rerun_check > 0)){
 
 # Setting a function ni to be 'not in' for checking if parents have data
 
-cat("Checking and deleting metadata for samples that have been re-run after projects in this batch\n")
+cat("Checking and deleting metadata for samples that have been re-run after projects in this batch\n\n")
 # Removing samples if this is the first round of sequencing
 for (i in 1:nrow(rerun_check)){
-metadata_50_cov = metadata_50_cov[!(metadata_50_cov$accession_id == rerun_check[i,1] & metadata_50_cov$seq_run != rerun_check[i,3]),] 
-    cat("deleting: ")
-    cat(rerun_check[i,1])
-    cat(",")
-    cat(rerun_check[i,2])
-    cat("\n")
+  metadata_50_cov = metadata_50_cov[!(metadata_50_cov$accession_id == rerun_check[i,1] & metadata_50_cov$seq_run != rerun_check[i,3]),] 
   }
-cat('\n')
+
 # Creating an empty matrix to fill in with metadata in GISAID format
 gisad_metadata = as.data.frame(matrix("",ncol=29,nrow=nrow(metadata_50_cov)))
 colnames(gisad_metadata) = c("submitter","fn","covv_virus_name","covv_type","covv_passage","covv_collection_date","covv_location","covv_add_location","covv_host","covv_add_host_info","covv_gender","covv_patient_age","covv_patient_status","covv_specimen","covv_outbreak","covv_last_vaccinated","covv_treatment","covv_seq_technology","covv_assembly_method","covv_coverage","covv_orig_lab","covv_orig_lab_addr","covv_provider_sample_id","covv_subm_lab","covv_subm_lab_addr","covv_subm_sample_id","covv_authors","covv_comment","comment_type")
