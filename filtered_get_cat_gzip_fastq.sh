@@ -5,7 +5,7 @@ for run in "$@"; do
 	gsutil -m cp gs://covid_terra/${run}/${run}_terra_data_table.tsv .
 	while read name gisaid proj; do
 		grep $name ${run}_terra_data_table.tsv >> ${run}_seqs_to_download.tsv
-	done < fasta_rename_accession_to_gisaid_id.tsv
+	done < fastqs_to_pull.txt
 
 	while read p; do
 	  echo $p

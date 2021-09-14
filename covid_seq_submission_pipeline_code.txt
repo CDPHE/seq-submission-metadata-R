@@ -31,11 +31,11 @@ COVMIN_0160
 	# column: gisaid_name add year to end of name
 # Alternatively, you could add the dates into the results*.tsv file.  If you do this then delete the original metadata files written out (it will mess up later code if you keep 2 sets of files), update the results*.tsv files, and then rerun the R script
 	
-# Get list of files with >= 50% coverage
+# Get list of files with >= 50% coverage and rerun samples removed
 cut -f 1 ncbi_biosample_submission*_metadata.tsv > fasta_headers_50cov.txt
 
-# pull consensus fastas to 'download_fasta' dir
-while read name; do gsutil -m cp -r gs://covid_terra/${name}/terra_outputs/assemblies/*_consensus_renamed.fa .; done < ${cur_wd}/project_list.txt
+# pull consensus fastas only for samples >50% coverage and rerun samples removed to 'download_fasta' dir
+while read name gisaid proj; do gsutil -m cp -r gs://covid_terra/${proj}/terra_outputs/assemblies/${name}_consensus_renamed.fa .; done < ${cur_wd}/metadata/fasta_rename_accession_to_gisaid_id.tsv
 
 # Concat all downloaded fastas in 'download_fasta' dir
 cat *_consensus_renamed.fa > raw_concat.fa
