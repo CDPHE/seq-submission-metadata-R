@@ -78,15 +78,15 @@ while read project acc; do gsutil cp gs://covid_terra/${project}/terra_outputs/a
 for i in *.bam; do samtools index $i; done
 
 # Use Aliview to see and correct sequences based on IGV
-# Read in: post_indel_concat_gisaid_format.fa
-# Write out: batch8_gisaid_initial_upload.fa
+# Read in: 
+# Write out: 
 
 # Files uploaded to GISAID
-# metadata: gisaid_submission_2021-09-06_metadata.csv
-# fasta: batch8_gisaid_initial_upload.fa
+# metadata: 
+# fasta: 
 
 # Submit biosample metadata
-ncbi_biosample_submission_2021-08-26_metadata.tsv
+
 
 # download file from Biosample - from email BioSampleObjects.txt to 'metadata' dir
 
