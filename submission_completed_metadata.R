@@ -50,14 +50,23 @@ if(!is.na(opt$path) & !is.na(opt$submitter_name)){
     ncbi_in = ldply(list.files(pattern = "metadata-.*-processed-ok.tsv"), read.delim, header=TRUE)
     ncbi_split = ncbi_in %>% separate(filename, c("accession_short",NA,NA), sep = "[.]", remove = FALSE)
     gisaid_in = ldply(list.files(pattern = "gisaid_hcov-19_.*.tsv"), read.delim, header = TRUE)
-    gisaid_split = gisaid_in %>% separate(Virus.name, c(NA,NA,"accession_short", "year"), sep = "/", remove = FALSE)
+      if(ncbi_split[1,12] == "OXFORD_NANOPORE"){
+      gisaid_split = gisaid_in %>% separate(Virus.name, c(NA,NA,"accession_short", "year"), sep = "/", remove = FALSE)
+      }else{gisaid_split = gisaid_in %>% separate(Virus.name, c(NA,NA,"accession_short", "year"), sep = "/", remove = FALSE)
+      gisaid_split$accession_short = gsub('CO-CDPHE-','',gisaid_split$accession_short)
+      }
     gisaid_filtered = gisaid_split[gisaid_split$accession_short %in% ncbi_split$accession_short,]
     ncbi_gisaid_merge = merge(x=ncbi_split, y=gisaid_filtered[,c(1:5,15:16)], by = "accession_short", all.x=TRUE)
     genbank = read.delim("seqids.txt", header=FALSE)
     genbank_split = genbank %>% separate(V1, c("sub","Virus.name"), sep = " ", remove = FALSE)
     ncbi_gisaid_genbank_merge = merge(x=ncbi_gisaid_merge, y=genbank_split[,3:4], by = "Virus.name", all.x = TRUE)
-    ncbi_gisaid_genbank_merge_split = ncbi_gisaid_genbank_merge %>% separate(accession_short, c(NA,NA,"cdphe_accesssion"), sep = "-", remove = FALSE)
-                                                                             
+    if(ncbi_split[1,12] == "OXFORD_NANOPORE"){
+      ncbi_gisaid_genbank_merge_split = ncbi_gisaid_genbank_merge %>% separate(accession_short, c(NA,NA,"cdphe_accesssion"), sep = "-", remove = FALSE)
+    }else{ncbi_gisaid_genbank_merge_split = ncbi_gisaid_genbank_merge
+    ncbi_gisaid_genbank_merge_split$cdphe_accesssion = ncbi_gisaid_genbank_merge$accession_short
+    ncbi_gisaid_genbank_merge_split$accession_short = paste("CO-CDPHE-", ncbi_gisaid_genbank_merge$accession_short, sep = "")
+    }
+    
     col_order <- c("cdphe_accesssion", "Virus.name", "accession_short", "title", "platform", "Collection.date", "Lineage", "Clade", "bioproject_accession", "biosample_accession", "accession", "V2", "Accession.ID")
     final_metadata <- ncbi_gisaid_genbank_merge_split[, col_order]
     final_metadata = final_metadata %>% add_column(submitter = opt$s, .before="cdphe_accesssion")
