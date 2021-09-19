@@ -29,6 +29,8 @@ option_list = list(
               help="OPTIONAL: Make the program not be verbose"),
   make_option(c("-r", "--rerun_file"), action="store", default=NA, type='character',
               help="REQUIRED: path and file name for text file with rerun information as downloaded from Google Drive"),
+  make_option(c("-c", "--completed_file"), action="store", default=NA, type='character',
+              help="REQUIRED: path and file name for text file with completed submission information as downloaded from Google Drive"),
   make_option(c("-t", "--seq_type"), action="store", default=NA, type='character',
               help="REQUIRED: sequencing type as a string in quotes that has to match 'Illumina MiSeq', 'Illumina NextSeq', or 'Oxford Nanopore GridION'")
 )
@@ -46,11 +48,13 @@ if (opt$v) {
   cat(opt$seq_type)
   cat("\n\nname of rerun file:\n")
   cat(opt$rerun_file)
+  cat("\n\nname of completed submissions file:\n")
+  cat(opt$completed_file)
   cat("\n\n")
 }
 
 # if all options are filled in then fill in the metadata otherwise error out
-if(!is.na(opt$metadata) & !is.na(opt$submitter_name) & !is.na(opt$seq_type) & !is.na(opt$fasta_name) & !is.na(opt$rerun_file)){
+if(!is.na(opt$metadata) & !is.na(opt$submitter_name) & !is.na(opt$seq_type) & !is.na(opt$fasta_name) & !is.na(opt$rerun_file) & !is.na(opt$completed_file)){
   if(opt$seq_type == "Illumina MiSeq" | opt$seq_type == "Illumina NextSeq" | opt$seq_type == "Oxford Nanopore GridION"){
 
 # set working directory
@@ -66,7 +70,8 @@ patterns <- c("Blank", "NC", "NTC", "ExtractionPositive", "DiaplexPositive", "PO
 metadata_no_blank_nc = filter(metadata_subset_cols, !grepl(paste(patterns, collapse="|"), accession_id))
 metadata_50_cov = metadata_subset_cols[metadata_subset_cols$percent_non_ambigous_bases >= 50.0,]
 missing_collection_date = as.data.frame(metadata_no_blank_nc[is.na(metadata_no_blank_nc$collection_date),c(1,2,3,5)])
-collection_date_wrong = as.data.frame(metadata_no_blank_nc[str_sub(metadata_no_blank_nc$collection_date,start=1,end=4) < 2020, c(1,2,3,5)])
+missing_collection_date_removed = as.data.frame(metadata_no_blank_nc[!is.na(metadata_no_blank_nc$collection_date),c(1,2,3,5)])
+collection_date_wrong = as.data.frame(missing_collection_date_removed[str_sub(missing_collection_date_removed$collection_date,start=1,end=4) < 2020, c(1,2,3,4)])
 project_list = as.data.frame(unique(metadata_readin$seq_run))
 colnames(project_list) = "projects"
 
@@ -74,11 +79,15 @@ colnames(project_list) = "projects"
 rerun_readin = read.delim(opt$rerun_file, header = TRUE)
 rerun_readin$first_run = gsub("\\s*\\([^\\)]+\\)","",as.character(rerun_readin$first_run))
 
+# Read in the completed tab 
+completed_readin = read.delim(opt$completed_file, header = TRUE)
+completed_accessions = completed_readin[completed_readin$accession_id %in% metadata_50_cov$accession_id,]
+
 # Find if samples are part of the rerun set
 rerun_check = rerun_readin[rerun_readin$accession_id %in% metadata_readin$accession_id,c(1,2,3,4)]
 
 # Printing warnings and files for checks
-# missing collection date
+# missing colsetlection date
 if(length(missing_collection_date >0)){
 cat("\nWARNING: the samples below are missing a collection date:\n")
 print(missing_collection_date, row.names = FALSE)
@@ -94,21 +103,28 @@ if(length(collection_date_wrong > 0)){
   write.table(collection_date_wrong, paste("samples_wrong_collection_date_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
 }
 
+cat("Checking and deleting metadata for samples that have been re-run after projects in this batch\n\n")
 # rerun samples
 if(length(rerun_check > 0)){
   cat("\nWARNING: the samples below have been rerun:\n")
   print(rerun_check[,c(1,2,3)], row.names = FALSE)
   cat('\n')
   write.table(rerun_check, paste("samples_rerun_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
+  
+  # Removing samples if this is the first round of sequencing
+  for (i in 1:nrow(rerun_check)){
+    metadata_50_cov = metadata_50_cov[!(metadata_50_cov$accession_id == rerun_check[i,1] & metadata_50_cov$seq_run != rerun_check[i,3]),] 
+  }
 }
 
-# Setting a function ni to be 'not in' for checking if parents have data
+# already submitted
+if(length(completed_accessions > 0)){
+  cat("\nWARNING: the samples below have been submitted with a previous project:\n")
+  print(completed_accessions, row.names = FALSE)
+  cat('\n')
+  write.table(completed_accessions, paste("samples_already_submitted_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
+}
 
-cat("Checking and deleting metadata for samples that have been re-run after projects in this batch\n\n")
-# Removing samples if this is the first round of sequencing
-for (i in 1:nrow(rerun_check)){
-  metadata_50_cov = metadata_50_cov[!(metadata_50_cov$accession_id == rerun_check[i,1] & metadata_50_cov$seq_run != rerun_check[i,3]),] 
-  }
 
 # Creating an empty matrix to fill in with metadata in GISAID format
 gisad_metadata = as.data.frame(matrix("",ncol=29,nrow=nrow(metadata_50_cov)))
