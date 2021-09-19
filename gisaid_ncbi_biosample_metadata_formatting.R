@@ -120,7 +120,8 @@ if(length(rerun_check > 0)){
 # already submitted
 if(length(completed_accessions > 0)){
   cat("\nWARNING: the samples below have been submitted with a previous project:\n")
-  print(completed_accessions, row.names = FALSE)
+  completed_accessions_print_out = completed_accessions[,c(1,2,6,12,13,14,15,16)]
+  print(completed_accessions_print_out, row.names = FALSE)
   cat('\n')
   write.table(completed_accessions, paste("samples_already_submitted_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
 }

@@ -368,10 +368,10 @@ Now you're ready to run the script R scripts
 
 ###GISAID and NCBI Biosample {.tabset .tabset-fade .tabset-pills}
 ####Useage
-In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.\*.csv in directory), concats the  files, filters for samples > 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample, a file that lists the current sample names and GISAID formatted names (users can then use awk command to rename samples), a file if any samples are missing the collection date, a file if the samples have a collection date prior to 2020, and a file if samples have been rerun. The metadata file will be written out for samples with >50 coverage and are the latest sequencing results.  You can run this R script directly from the command line.  You will need to supply 5 pieces of information as options / flags when running the script. 
+In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.\*.csv in directory), concats the  files, filters for samples > 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample, a file that lists the current sample names and GISAID formatted names (users can then use awk command to rename samples), a file if any samples are missing the collection date, a file if the samples have a collection date prior to 2020, a file if those samples have already been uploaded (resequenced, but not because they failed), and a file if samples have been rerun because they failed or had contamination. The metadata file will be written out for samples with >50 coverage and are the latest sequencing results.  You can run this R script directly from the command line.  You will need to supply 6 pieces of information as options / flags when running the script. 
 
 **Script name:** gisaid_ncbi_biosample_metadata_formatting.R  
-**Input file regex:** results_.\*.tsv  
+**Input files:** results_.\*.tsv (pull all files with this regex), samples_already_submitted_\*.tsv, samples_rerun_\*.tsv
 **Options / flags:** required to fill in all.  The code will check spelling on the sequencing information and will error out if something is misspelled (options in #4 below)  
 
 1. -m | --metadata = path/to/seq_metadata/files # This also sets the working directory to write files
@@ -379,11 +379,12 @@ In short, the script takes in user specified information to pull all sequencing 
 3. -s | --submitter_name = gisaid_submitter_name
 4. -t | --seq_type = sequencing_type (Oxford Nanopore GridION, Illumina MiSeq, Illumina NextSeq)
 5. -r | --rerun_file = path/to/rerun_file.tsv # tsv downloaded from List_of_bad_runs_and_waste_water_samples
+6. -c | --completed_file = path/to/completed_file.tsv # tsv downloaded from submissions_and_compiled_metadata 
 
 **Example usage (short flags):**
 ```{bash, "gisaid_short", echo=TRUE, eval=FALSE}
 # You need to type Rscript  before your Rscript to run (Rscript gisaid_ncbi_biosample_metadata_formatting.R)
-Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_metadata -f test_fasta.fa -s mandywaters -t "Oxford Nanopore GridION" -r /home/mandy_waters/rerun_samples_11Sep2021.tsv
+Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_metadata -f test_fasta.fa -s mandywaters -t "Oxford Nanopore GridION" -r /home/mandy_waters/rerun_samples_11Sep2021.tsv -c /home/mandy_waters/samples_already_submitted_11Sep2021.tsv
 
 # Strings with spaces need quotes
 ```
@@ -391,17 +392,17 @@ Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_m
 **Example usage (long flags):**
 ```{bash, "gisaid_long", echo=TRUE, eval=FALSE}
 # You need to type Rscript  before your Rscript to run (Rscript gisaid_ncbi_biosample_metadata_formatting.R)
-Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type "Oxford Nanopore GridION" --rerun_file /home/mandy_waters/rerun_samples_11Sep2021.tsv
+Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type "Oxford Nanopore GridION" --rerun_file /home/mandy_waters/rerun_samples_11Sep2021.tsv --completed_file /home/mandy_waters/samples_already_submitted_11Sep2021.tsv
 
 # Strings with spaces need quotes
 ```
 
 **Output to terminal:**
-Script prints the strings the user input for you to check.  If you don't privde values for all flags then the script will error out and tell you which flag(s) are missing.  The script will also error out if the sequence type name is misspelled.  A warning will print that lists the accession name, coverage, and project number for samples that are missing a collection date.  It will not error out, but will print this info and write it to a file for users to review.
+Script prints the strings the user input for you to check.  If you don't privde values for all flags then the script will error out and tell you which flag(s) are missing.  The script will also error out if the sequence type name is misspelled.  A warning will print that lists the accession name, coverage, and project number for samples that are missing a collection date or have a collection date prior to 2020.  It will not error out, but will print this info and write it to a file for users to review. Another warning (will not error out) will be printed if samples in your current batch have already been submitted.  It will print relevant information from the COMPLETED tab in the metadata tracking excel sheet on Google Drive.
 
 You should see something like the following regardless of short or long flag names
 ```{r, "r_out", echo=TRUE, eval=FALSE}
-Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type "Oxford Nanopore GridION" --rerun_file /home/mandy_waters/rerun_samples_11Sep2021.tsv
+Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type "Oxford Nanopore GridION" --rerun_file /home/mandy_waters/rerun_samples_11Sep2021.tsv --completed_file /home/mandy_waters/samples_already_submitted_11Sep2021.tsv
 
 metadata path:
 /home/mandy_waters/test_metadata
@@ -418,6 +419,9 @@ Oxford Nanopore GridION
 name of rerun file:
 /home/mandy_waters/rerun_samples_11Sep2021.tsv
 
+name of completed submissions file:
+/Users/water157/Desktop/completed_submissions_19Sep2021.tsv
+
 
 WARNING: the samples below have a collection date before 2020:
  accession_id percent_non_ambigous_bases collection_date       seq_run
@@ -432,6 +436,16 @@ WARNING: the samples below have been rerun:
    2101633590             NEXSEQ_043    NEXSEQ_048
 
 Checking and deleting metadata for samples that have been re-run post projects in this batch
+
+WARNING: the samples below have been submitted with a previous project:
+    submitter accession_id instrument_model    BioSample         SRA  GenBank
+ mandy.waters   2101448151  OXFORD_NANOPORE SAMN21243277 SRR15899746 OK160504
+ mandy.waters   2101448165  OXFORD_NANOPORE SAMN21243254 SRR15899803 OK160643
+ mandy.waters   2101450894  OXFORD_NANOPORE SAMN21243280 SRR15899742 OK160177
+ mandy.waters   2101456893  OXFORD_NANOPORE SAMN21243252 SRR15899805 OK160313
+ mandy.waters   2101456894  OXFORD_NANOPORE SAMN21243251 SRR15899806 OK160071
+ mandy.waters   2101456915  OXFORD_NANOPORE SAMN21243250 SRR15899808 OK160492
+ mandy.waters   2101457058  OXFORD_NANOPORE SAMN21243192 SRR15900193 OK160627
 ```
 
 **Output files:**
@@ -442,6 +456,7 @@ Checking and deleting metadata for samples that have been re-run post projects i
 4. CONDITIONAL: Missing collection date only writes this if samples are missing a collection date (e.g. samples_missing_collection_date_2021-07-03.tsv)
 5. CONDITIONAL: Collection date before 2020 only writes if samples collection date is before 2020 (e.g. samples_wrong_collection_date_2021-09-11.tsv)
 6. CONDITIONAL: samples that have been rerun are listed if the accessions in your batch match accessions listed in the rerun file (e.g. samples_rerun_2021-09-11.tsv)
+7. CONDITIONAL: samples that have already been submitted under a previous project (e.g. samples_already_submitted_2021-09-11.tsv)
 
 I use the following awk command to replace the accession IDs in the fasta with GISAID accepted names.  These samples have been run through all the steps through indel finder.  After this the samples are run through VADR.
 ```{bash, "remplace_gisaid_ids", echo=TRUE, eval=FALSE}
@@ -453,7 +468,8 @@ awk -F, 'FNR==NR {f2[$1]=$2;next} $2 in f2 {$2=f2[$2]}1' /path/to/fasta_rename_a
 ####Error example
 This is an example of an error message that's missing the -r option
 ```{bash, "r_out2", echo=TRUE, eval=FALSE}
-Rscript gisaid_ncbi_biosample_metadata_formatting.R -m ~/home/mandy_waters -f test.fa -s mandy.waters -t "Oxford Nanopore GridION" 
+Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_metadata -f test_fasta.fa -s mandywaters -t "Oxford Nanopore GridION" -c /home/mandy_waters/samples_already_submitted_11Sep2021.tsv
+
 
 metadata path:
 /home/mandy_waters
@@ -469,6 +485,10 @@ Oxford Nanopore GridION
 
 name of rerun file:
 NA
+
+name of completed submissions file:
+/home/mandy_waters/samples_already_submitted_11Sep2021.tsv
+
 
 ERROR: you did not specify all varialbles. Please supply all required options. Type Rscript gisaid_ncbi_biosample_metadata_formatting.R -h for list of required options
 
