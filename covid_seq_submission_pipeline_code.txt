@@ -22,7 +22,7 @@ COVMIN_0160
 ./gisaid_ncbi_biosample_metadata_formatting.R -m ${cur_wd}/metadata -s mandy.waters -f batch6_gisaid_inital_upload.fa -t "Oxford Nanopore GridION"
 
 # I got a warning that some samples were missing collection dates, so Shannon provided those dates from a list of accession IDs, which are printed to the terminal and an output file.  Users need to manually updated the GISAID, Biosample, and rename metadata files:
-# gisaid_submission_*_metadata.csv: 
+# gisaid_submission_*_metadata.csv:
 	# column: covv_virus_name add year to end of name
 	# column: covv_collection_date add collection date in format YYYY-MM-DD
 # ncbi_biosample_submission_*_metadata.tsv
@@ -30,7 +30,7 @@ COVMIN_0160
 # fasta_rename_accession_to_gisaid_id.csv
 	# column: gisaid_name add year to end of name
 # Alternatively, you could add the dates into the results*.tsv file.  If you do this then delete the original metadata files written out (it will mess up later code if you keep 2 sets of files), update the results*.tsv files, and then rerun the R script
-	
+
 # Get list of files with >= 50% coverage and rerun samples removed
 cut -f 1 ncbi_biosample_submission*_metadata.tsv > fasta_headers_50cov.txt
 
@@ -59,7 +59,7 @@ grep '+' *indels.csv > coverage_info_insertions.csv
 sort -t , -k 3 coverage_info_insertions.csv
 
 # Pulling project and accession information from the sequencing results file
-while read name; do grep $name ${cur_wd}/metadata/results_*.tsv >> failed_to_pull_bam_files.txt; done < indel_finder_insertion_accession_names.txt 
+while read name; do grep $name ${cur_wd}/metadata/results_*.tsv >> failed_to_pull_bam_files.txt; done < indel_finder_insertion_accession_names.txt
 
 # Getting only the information we need
 cut -f 28-29 failed_to_pull_bam_files.txt > project_accessions_failed.txt
@@ -81,7 +81,7 @@ docker run --rm=True -v $PWD:/data -u $(id -u):$(id -g) staphb/vadr:1.3 v-annota
 
 # Pulling samples for IGV in vadr_run
 sed 's/hCoV-19\/USA\/CO-CDPHE-//g' vadr_run.vadr.fail.list > accessions_failed_to_pull.csv
-sed -i -e 's/\/202.*//g' accessions_failed_to_pull.csv 
+sed -i -e 's/\/202.*//g' accessions_failed_to_pull.csv
 while read name; do grep $name ${cur_wd}/metadata/results*.tsv >> failed_to_pull_bam_files.txt; done < accessions_failed_to_pull.csv
 cut -f 28-29 failed_to_pull_bam_files.txt > project_accessions_failed.txt
 
@@ -117,12 +117,58 @@ cut -f 13 ncbi_sra_submission_*metadata.tsv | sed 's/"//g' | grep -v '^file' > f
 
 # Deleting files don't need to upload in 'sequence_data' dir
 for i in *fastq.gz; do
-    if ! grep -qxFe "$i" ${cur_wd}/metadata/fastqs_to_keep.tsv; then 
+    if ! grep -qxFe "$i" ${cur_wd}/metadata/fastqs_to_keep.tsv; then
     	echo "Deleting: $i"
         rm "$i"
     fi
 done
 
 # Upload to SRA
-# metadata: 
+# metadata:
 /home/mandy_waters/aspera-connect/connect/bin/ascp -i /home/mandy_waters/Downloads/aspera.openssh -d ${cur_wd}/sequence_data subasp@upload.ncbi.nlm.nih.gov:uploads/mandy.waters_state.co.us_WRKu59ly
+
+# Pulling GISAID failed accessions - same might not be caught by VADR and some are, so check your notes from sequence edits to submit to GISAID
+# Add in accessions from the unreleased metadata file - I use VIM to write file: samples_reject_gisaid_to_pull.txt
+sed -i 's/hCoV-19\/USA\/CO-CDPHE-//g' samples_reject_gisaid_to_pull.txt
+sed -i 's/\/2021//g' samples_reject_gisaid_to_pull.txt
+sed -i 's/\/2020//g' samples_reject_gisaid_to_pull.txt
+
+while read name; do grep $name ${cur_wd}/metadata/results_*.tsv >> gisaid_failed_pull_bam_files.txt; done < samples_reject_gisaid_to_pull.txt
+
+cut -f 28-29 gisaid_failed_pull_bam_files.txt > gisaid_project_accession_failed.txt
+
+# pull files
+while read project acc; do gsutil cp gs://covid_terra/${project}/terra_outputs/alignments/${acc}*.bam .; done < gisaid_project_accession_failed.txt
+
+for i in *.bam; do samtools index $i; done
+
+# check in Alivew and IGV
+# read in: batch6_gisaid_initial_upload.fa
+# write out: batch6_gisaid_reeupload_all_seqs.fa
+
+# Pulling those sequences
+seqkit grep -n -f gisaid_accesions_failed.txt batch6_gisaid_reeupload_all_seqs.fa -o batch6_gisaid_reupload_seq.fa
+
+# Reupload to GISAID
+batch6_gisaid_reupload_seq.fa
+
+# Download file from SRA: metadata-10377804-processed-ok.tsv
+# Download file from GISAID: gisaid_hcov-19_2021_09_16_22.tsv
+
+# Create NCBI metadata sheet
+Rscript ncbi_genbank_metadata_formatting.R -p ${cur_wd}/metadata -t "Oxford Nanopore GridION"
+
+# Getting fasta file ready for NCBI
+sed '/^>/! s/-//g' batch6_gisaid_reeupload_all_seqs.fa > batch6_ncbi_genbank_corrected.fasta
+awk '{if (substr($1, 1, 1)==">") print $0" [bioproject=PRJNA686984]"; else print $0}' batch6_ncbi_genbank_corrected.fasta > batch6_ncbi_genbank_corrected_proj.fasta
+
+# files uploaded to GenBank
+# metadata: ncbi_genbank_submission_2021-09-16_metadata.tsv
+# fasta: batch6_ncbi_genbank_corrected_proj.fasta
+
+# Download accessions.txt from NCBI email and rename
+mv accessions.txt seqids.txt
+mv seqids.txt ~/batch6_submit/metadata
+
+# create final submission metadata and add to excel spreadsheet
+Rscript submission_completed_metadata.R -p ${cur_wd}/metadata -s mandy.waters

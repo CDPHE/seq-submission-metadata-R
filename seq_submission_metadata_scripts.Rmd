@@ -119,6 +119,17 @@ The sequencing center adds information about which samples were rerun on the CDP
 mv List_of_bad_runs_and_waste_water_samples\ -\ re-run_samples.tsv rerun_samples_$(date +%d%b%Y).tsv
 ```
 
+####Download completed list
+Some samples will be sequenced more than once on different sequencing platform (didn't fail, so they won't be in the rerun / bad noodle samples).  To accoount for this users should also download a copy of the COMPLETED_submissions' tab in submissions_and_compiled_metadata 
+
+1. Navigate to the [Google sheet](https://docs.google.com/spreadsheets/d/1n9NzJNrqIHP9Lct_MZuSnOv3Qn1JCZsI/edit#gid=331506794) - if you can't reach this site then one of the current contributors with edit access to share the file with you.
+2. Click File -> Download -> tab-separated values (tsv, current sheet)
+3. Once downloaded run the following command to pseudo track versions - this adds the date and gets rid of spaces
+
+```{bash, "rename_completed", echo=TRUE, eval=FALSE}
+mv SUBMISSIONS_and_compiled_metadata.xlsx\ -\ COMPLETED_submissions_metadata.tsv completed_submissions_$(date +%d%b%Y).tsv
+```
+
 ####GISAID submission
 
 Submit your sequence to GISAID
