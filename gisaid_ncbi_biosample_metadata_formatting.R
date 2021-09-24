@@ -68,9 +68,9 @@ colnames(cols_to_keep) = "col_names"
 metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
 patterns <- c("Blank", "NC", "NTC", "ExtractionPositive", "DiaplexPositive", "POS")
 metadata_no_blank_nc = filter(metadata_subset_cols, !grepl(paste(patterns, collapse="|"), accession_id))
-metadata_50_cov = metadata_subset_cols[metadata_subset_cols$percent_non_ambigous_bases >= 50.0,]
-missing_collection_date = as.data.frame(metadata_no_blank_nc[is.na(metadata_no_blank_nc$collection_date),c(1,2,3,5)])
-missing_collection_date_removed = as.data.frame(metadata_no_blank_nc[!is.na(metadata_no_blank_nc$collection_date),c(1,2,3,5)])
+metadata_50_cov = metadata_no_blank_nc[metadata_no_blank_nc$percent_non_ambigous_bases >= 50.0,]
+missing_collection_date = as.data.frame(metadata_50_cov[is.na(metadata_50_cov$collection_date),c(1,2,3,5)])
+missing_collection_date_removed = as.data.frame(metadata_50_cov[!is.na(metadata_50_cov$collection_date),c(1,2,3,5)])
 collection_date_wrong = as.data.frame(missing_collection_date_removed[str_sub(missing_collection_date_removed$collection_date,start=1,end=4) < 2020, c(1,2,3,4)])
 project_list = as.data.frame(unique(metadata_readin$seq_run))
 colnames(project_list) = "projects"
@@ -106,7 +106,7 @@ if(length(collection_date_wrong > 0)){
 cat("Checking and deleting metadata for samples that have been re-run after projects in this batch\n\n")
 # rerun samples
 if(length(rerun_check > 0)){
-  cat("\nWARNING: the samples below have been rerun:\n")
+  cat("\nWARNING: the samples below have been rerun and are being removed from the dataset:\n")
   print(rerun_check[,c(1,2,3)], row.names = FALSE)
   cat('\n')
   write.table(rerun_check, paste("samples_rerun_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
@@ -119,10 +119,14 @@ if(length(rerun_check > 0)){
 
 # already submitted
 if(length(completed_accessions > 0)){
-  cat("\nWARNING: the samples below have been submitted with a previous project:\n")
+  cat("\nWARNING: the samples below have been submitted with a previous project  and are being removed from the dataset:\n")
   completed_accessions_print_out = completed_accessions[,c(1,2,6,12,13,14,15,16)]
   print(completed_accessions_print_out, row.names = FALSE)
   cat('\n')
+  # Removing samples if this is the first round of sequencing
+  for (i in 1:nrow(completed_accessions)){
+    metadata_50_cov = metadata_50_cov[!(metadata_50_cov$accession_id == completed_accessions[i,2]),] 
+  }
   write.table(completed_accessions, paste("samples_already_submitted_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
 }
 
