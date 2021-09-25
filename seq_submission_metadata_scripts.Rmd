@@ -69,7 +69,7 @@ Programs to download/install on your VM for the submission process:
 conda install -c bioconda samtools
 ```
 
-9. Aspera Connect Ascp: gsutil cp -r gs://laura-sandbox/aspera-connect/ . Then you can fin ascp in aspera/connect/bin
+9. Aspera Connect Ascp: gsutil cp -r gs://laura-sandbox/aspera-connect/ . Then you can find ascp in aspera/connect/bin.  You might need to make the ascp file executable by running chmod +x aspera/connect/bin/ascp
 10. [Aliview](https://ormbunkar.se/aliview/#DOWNLOAD) - review MSA.  After install you can open 'aliview' by just typing aliview on your VM terminal
 11. rename_fasta.py: might be good to have, but Molly's modifications to indel_finder as of Sept 3, 2021 takes in multi-fasta, so this script isn't needed.  Can be accessed using: gsutil cp gs://laura-terra/rename_fasta.py .  
 
@@ -383,7 +383,7 @@ In short, the script takes in user specified information to pull all sequencing 
 
 **Example usage (short flags):**
 ```{bash, "gisaid_short", echo=TRUE, eval=FALSE}
-# You need to type Rscript  before your Rscript to run (Rscript gisaid_ncbi_biosample_metadata_formatting.R)
+# You need to type Rscript before your Rscript to run (Rscript gisaid_ncbi_biosample_metadata_formatting.R)
 Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_metadata -f test_fasta.fa -s mandywaters -t "Oxford Nanopore GridION" -r /home/mandy_waters/rerun_samples_11Sep2021.tsv -c /home/mandy_waters/samples_already_submitted_11Sep2021.tsv
 
 # Strings with spaces need quotes
@@ -391,7 +391,7 @@ Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_m
 
 **Example usage (long flags):**
 ```{bash, "gisaid_long", echo=TRUE, eval=FALSE}
-# You need to type Rscript  before your Rscript to run (Rscript gisaid_ncbi_biosample_metadata_formatting.R)
+# You need to type Rscript before your Rscript to run (Rscript gisaid_ncbi_biosample_metadata_formatting.R)
 Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type "Oxford Nanopore GridION" --rerun_file /home/mandy_waters/rerun_samples_11Sep2021.tsv --completed_file /home/mandy_waters/samples_already_submitted_11Sep2021.tsv
 
 # Strings with spaces need quotes
@@ -502,7 +502,7 @@ Execution halted
 This script takes in user specified information and file sent from NCBI biosample submisssion (BioSampleObjects.txt) to create a metadata file with format needed to submit reads to SRA. You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script. NOTE: this writes out the file names based on expected patterns for each type of sequecing and assumes that all files are gzipped.  I use the script get_cat_gzip_fastq.sh, written by Mike Martin with a minor adjustments to include gzipping and write all files to the same directory for concatting Oxford Nanopore reads into a single fastq.gz.  The version I use is in the same repo as these R scripts.
 
 **Script name:** ncbi_sra_metadata_formatting.R  
-**Input file in path:** BioSampleObjects.txt  
+**Input file in path:** BioSampleObjects.txt (file attached from NCBI BioSample email confirming samples are published)
 **Options / flags:** required to fill in all.  The code will check spelling on the sequencing information and will error out if something is misspelled (options in #2 below)  
 
 1. -p | --path = path/to/seq_metadata/files # This also sets the working directory to write files
@@ -582,7 +582,7 @@ Execution halted
 This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_\*.tsv), and downloaded file from NCBI SRA (metadata-.\*-processed-ok.tsv). You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script. 
 
 **Script name:** ncbi_genbank_metadata_formatting.R  
-**Input files in path:** metadata-\*-processed-ok.tsv and gisaid_hcov-19_\*.tsv  
+**Input files in path:** metadata-\*-processed-ok.tsv (downloaded from NCBI submission page - click 'Download metadata file with SRA accessions' and moved to directory you put in the -p option) and gisaid_hcov-19_\*.tsv (Download the seqeunce_metadata file from GISAID search and move to directory you put in the -p option)
 **Options / flags:** required to fill in all.  The code will check spelling on the sequencing information and will error out if something is misspelled (options in #2 below)  
 
 1. -p | --path = path/to/seq_metadata/files # This also sets the working directory to write files
