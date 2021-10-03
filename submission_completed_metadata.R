@@ -36,7 +36,7 @@ if (opt$v) {
   cat(opt$path)
   cat("\n\nsubmitter name:\n")
   cat(opt$submitter_name)
-  cat("\n\n\n\n")
+  cat("\n\n")
 }
 
 # if all options are filled in then fill in the metadata otherwise error out
@@ -57,6 +57,12 @@ if(!is.na(opt$path) & !is.na(opt$submitter_name)){
       }
     gisaid_filtered = gisaid_split[gisaid_split$accession_short %in% ncbi_split$accession_short,]
     ncbi_gisaid_merge = merge(x=ncbi_split, y=gisaid_filtered[,c(1:5,15:16)], by = "accession_short", all.x=TRUE)
+# renaming the file if NCBI sends it as accessions.txt    
+    if (file.exists("accessions.txt")) {
+      file.rename("accessions.txt", "seqids.txt")
+    } else {
+      cat("GenBank file has expected file name\n")
+    }
     genbank = read.delim("seqids.txt", header=FALSE)
     genbank_split = genbank %>% separate(V1, c("sub","Virus.name"), sep = " ", remove = FALSE)
     ncbi_gisaid_genbank_merge = merge(x=ncbi_gisaid_merge, y=genbank_split[,3:4], by = "Virus.name", all.x = TRUE)
@@ -66,6 +72,12 @@ if(!is.na(opt$path) & !is.na(opt$submitter_name)){
     ncbi_gisaid_genbank_merge_split$cdphe_accesssion = ncbi_gisaid_genbank_merge$accession_short
     ncbi_gisaid_genbank_merge_split$accession_short = paste("CO-CDPHE-", ncbi_gisaid_genbank_merge$accession_short, sep = "")
     }
+
+    # Read in results file to get seq_run number
+    metadata_readin = ldply(list.files(pattern = "results_.*.tsv"), read.delim, header=TRUE, na.strings = c("","sample failed assembly"), check.names = FALSE)
+    cols_to_keep = as.data.frame(c("accession_id","seq_run"))
+    colnames(cols_to_keep) = "col_names"
+    metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
     
     col_order <- c("cdphe_accesssion", "Virus.name", "accession_short", "title", "platform", "Collection.date", "Lineage", "Clade", "bioproject_accession", "biosample_accession", "accession", "V2", "Accession.ID")
     final_metadata <- ncbi_gisaid_genbank_merge_split[, col_order]
@@ -73,10 +85,22 @@ if(!is.na(opt$path) & !is.na(opt$submitter_name)){
     final_metadata = final_metadata %>% add_column(isolate = "patient isolate", .before="Collection.date")
     final_metadata = final_metadata %>% add_column(submission_data = date, .after="Accession.ID")
     colnames(final_metadata) = c("submitter","accession_id","Virus name","isolate/sample_name","sample_title","instrument_model","Isolation Source","Collection date","Lineage","Clade","BioProject","BioSample","SRA","GenBank","GISAID","Submission Date")
-
+    
+    missing_genbank = final_metadata[is.na(final_metadata$GenBank),]
+    missing_genbank_merged = merge(x=missing_genbank, y=metadata_subset_cols, by="accession_id", all.x = TRUE)
+    final_metadata = final_metadata[!is.na(final_metadata$GenBank),]
+    
+    if(length(missing_genbank >0)){
+      cat('\nSome of the samples were rejected by GenBank.  Check ONGOING_genabnk_missing_date_metadata.tsv for list. \n')
+      missing_genbank_merged = subset(missing_genbank_merged, select=-`Submission Date`)
+      missing_genbank_merged = missing_genbank_merged %>% relocate(GISAID, .after = Clade)
+      missing_genbank_merged = missing_genbank_merged %>% relocate(seq_run, .after = submitter)
+      write.table(missing_genbank_merged, paste("ONGOING_genbank_missing", date, "metadata.tsv", sep="_"), row.names = FALSE, quote = TRUE, sep = '\t')
+    }
+    
 } else {
   cat("ERROR: you didn't specify all varialbles. Please supply all values\n\n") # print error messages
 }
 
-write.table(final_metadata, file=paste("final_submission_tracking", date, "metadata.tsv", sep="_"), row.names = FALSE, quote = TRUE, sep = '\t')
+write.table(final_metadata, file=paste("COMPLETED", date, "metadata.tsv", sep="_"), row.names = FALSE, quote = TRUE, sep = '\t')
 
