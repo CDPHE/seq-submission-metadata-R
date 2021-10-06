@@ -95,7 +95,7 @@ if(!is.na(opt$path) & !is.na(opt$submitter_name)){
       missing_genbank_merged = subset(missing_genbank_merged, select=-`Submission Date`)
       missing_genbank_merged = missing_genbank_merged %>% relocate(GISAID, .after = Clade)
       missing_genbank_merged = missing_genbank_merged %>% relocate(seq_run, .after = submitter)
-      missing_genbank_merged = missing_genbank_merged %>% relocate(accession_id, .before = submitter)
+      missing_genbank_merged = missing_genbank_merged %>% relocate(accession_id, .after = submitter)
       write.table(missing_genbank_merged, paste("ONGOING_genbank_missing", date, "metadata.tsv", sep="_"), row.names = FALSE, quote = TRUE, sep = '\t')
     }
     
