@@ -69,11 +69,11 @@ metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_k
 patterns <- c("Blank", "NC", "NTC", "ExtractionPositive", "DiaplexPositive", "POS")
 metadata_no_blank_nc = filter(metadata_subset_cols, !grepl(paste(patterns, collapse="|"), accession_id))
 metadata_50_cov = metadata_no_blank_nc[metadata_no_blank_nc$percent_non_ambigous_bases >= 50.0,]
-dups = as.data.frame(metadata_50_cov[duplicated(metadata_50_cov$accession_id),1])
-colnames(dups) = "duplicate_accessions"
+dups = as.data.frame(metadata_50_cov[duplicated(metadata_50_cov$accession_id),c(1,5)])
+colnames(dups) = c("duplicate_accessions", "seq_run")
 
 # print warning if accession is in batch more than once
-if(length(dups) > 0){
+if(length(dups>0)){
   cat("\nWARNING: the follwoing samples were duplicated in the batch. The sample with higher coverage will be retained\n")
   print(dups, row.names = FALSE)
   cat('\n')
