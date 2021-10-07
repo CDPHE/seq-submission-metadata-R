@@ -69,6 +69,21 @@ metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_k
 patterns <- c("Blank", "NC", "NTC", "ExtractionPositive", "DiaplexPositive", "POS")
 metadata_no_blank_nc = filter(metadata_subset_cols, !grepl(paste(patterns, collapse="|"), accession_id))
 metadata_50_cov = metadata_no_blank_nc[metadata_no_blank_nc$percent_non_ambigous_bases >= 50.0,]
+dups = as.data.frame(metadata_50_cov[duplicated(metadata_50_cov$accession_id),1])
+colnames(dups) = "duplicate_accessions"
+
+# print warning if accession is in batch more than once
+if(length(dups) > 0){
+  cat("\nWARNING: the follwoing samples were duplicated in the batch. The sample with higher coverage will be retained\n")
+  print(dups, row.names = FALSE)
+  cat('\n')
+}
+
+# Droopping the sample with lower coverage
+metadata_50_cov = metadata_50_cov[order(metadata_50_cov[,"accession_id"],-metadata_50_cov[,"percent_non_ambigous_bases"]),]
+metadata_50_cov = metadata_50_cov[!duplicated(metadata_50_cov$accession_id),]
+
+# pulling samples that have missing or iincorrect (priror to 2020) collection date
 missing_collection_date = as.data.frame(metadata_50_cov[is.na(metadata_50_cov$collection_date),c(1,2,3,5)])
 missing_collection_date_removed = as.data.frame(metadata_50_cov[!is.na(metadata_50_cov$collection_date),c(1,2,3,5)])
 collection_date_wrong = as.data.frame(missing_collection_date_removed[str_sub(missing_collection_date_removed$collection_date,start=1,end=4) < 2020, c(1,2,3,4)])
@@ -106,7 +121,7 @@ if(length(collection_date_wrong > 0)){
 cat("Checking and deleting metadata for samples that have been re-run after projects in this batch\n\n")
 # rerun samples
 if(length(rerun_check > 0)){
-  cat("\nWARNING: the samples below have been rerun and are being removed from the dataset:\n")
+  cat("\nWARNING: the samples below have been submitted under multiple projects.  If you are processing the project in 'first_run' these samples will be removed from the dataset:\n")
   print(rerun_check[,c(1,2,3)], row.names = FALSE)
   cat('\n')
   write.table(rerun_check, paste("samples_rerun_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
@@ -119,7 +134,7 @@ if(length(rerun_check > 0)){
 
 # already submitted
 if(length(completed_accessions > 0)){
-  cat("\nWARNING: the samples below have been submitted with a previous project  and are being removed from the dataset:\n")
+  cat("\nWARNING: the samples below have already been submitted and are being deleted from the dataset:\n")
   completed_accessions_print_out = completed_accessions[,c(1,2,6,12,13,14,15,16)]
   print(completed_accessions_print_out, row.names = FALSE)
   cat('\n')
