@@ -38,11 +38,11 @@ if (opt$v) {
   cat("\n\n\n\n")
 }
 
-# if all options are filled in then fill in the metadata otherwise error out
+# if all options are filled in and spelled correctly then fill in the metadata otherwise error out
 if(!is.na(opt$path) & !is.na(opt$seq_type)){
   if(opt$seq_type == "Illumina MiSeq" | opt$seq_type == "Illumina NextSeq" | opt$seq_type == "Oxford Nanopore GridION"){
 
-  # set working directory
+  # set working directory and get date
   setwd(opt$path)
   date = Sys.Date()
     
@@ -119,7 +119,7 @@ if(!is.na(opt$path) & !is.na(opt$seq_type)){
       genbank_metadata$SRA = ncbi_gisaid_merge$accession
       genbank_metadata$note = paste("GISAID_ID:", ncbi_gisaid_merge$Accession.ID, sep = " ")
     }else{
-        cat("ERROR: can't create metdata.  Please check column names.\n\n")
+        cat("ERROR: can't create metdata.  Please check column names because the script can't merge data based on accession and file names.\n\n")
       }
   
   } else {

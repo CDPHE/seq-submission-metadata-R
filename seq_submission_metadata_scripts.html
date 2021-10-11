@@ -248,7 +248,7 @@ summary {
 
 <div id="goals" class="section level3">
 <h3>Goals</h3>
-<p>Provide a details overview of SARS-CoV-2 to GISAID, NCBI BioSample, NCBI SRA, and NCBI GenBank. This document will take CDPHE colleagues through initial set up on a GCP VM running Ubuntu 18.04, process / pipeline flow, and scripts developed to automate metadata genereation. Scripts are availble on the CDPHE <a href="https://github.com/CDPHE/seq-submission-metadata-R">Github</a>. This section will cover the following items:</p>
+<p>Provide a detailed overview of SARS-CoV-2 submissions to GISAID, NCBI BioSample, NCBI SRA, and NCBI GenBank. This document will take CDPHE colleagues through initial set up on a GCP VM running Ubuntu 18.04, process / pipeline flow, and scripts developed to automate metadata genereation. Scripts are availble on the CDPHE <a href="https://github.com/CDPHE/seq-submission-metadata-R">Github</a>. This section will cover the following items:</p>
 <ol style="list-style-type: decimal">
 <li>Getting set up with software and accounts (GISAID and NCBI)<br />
 </li>
@@ -275,7 +275,7 @@ email: CDPHE email</p>
 </div>
 <div id="ncbi-account" class="section level4">
 <h4>NCBI Account</h4>
-<p>NCBI has a new login method where you use your gmail (CDPHE email) to sign in and authenticate. Make sure your the keychain for your browser is for your CDPHE email otherwise it will error out. I had some intermitent issues getting proxy errors and such, but kept refreshing until it worked. Follow the instructions given by NCBI to create a new account. NCBI will send you a confirmation email once they've processed your request.</p>
+<p>NCBI has a new login method where you use your gmail (CDPHE email) to sign in and authenticate. Make sure the keychain for your browser is for your CDPHE email otherwise it will error out. I had some intermitent issues getting proxy errors and such, but kept refreshing until it worked. Follow the instructions given by NCBI to create a new account. NCBI will send you a confirmation email once they've processed your request.</p>
 <p>Navigate to NCBI's registration page: <a href="https://account.ncbi.nlm.nih.gov/signup/">link</a>.</p>
 <p>Institution: Colorado Department of Public Health and Environment<br />
 Department: Microbiology<br />
@@ -312,12 +312,12 @@ back-up email: personal email</p>
 <h3>General information</h3>
 <div id="finding-data" class="section level4">
 <h4>Finding data</h4>
-<p>Special call out to Laura Bankers for most of the below content</p>
+<p>Special call out to Laura Bankers for most of the content below</p>
 <p><strong>Overview:</strong> All sequencing data, intermediate files, alignments (bam files), and assemblies are stored in the google bucket gs://covid_terra in the SNP Linux project on GCP. Inside that bucket, there is a directory for each sequencing run, and inside that directory are all of the raw data and necessary files for every sample sequenced on that run. Sequencing run directories are named based on the platform + run id number. Those beginning with COVSEQ_ are paired-end Illumina Miseq runs, those beginning with COVMIN_ are Oxford Nanopore GridION runs, NEXSEQ_ are single-end NextSeq runs, and COVARC are archived samples from earlier in the pandemic that we are now going back to and are sequenced on either MiSeq or GridION. The numbers after the underscore are the run id numbers (e.g. COVMIN_0009 is nanopore run 0009). For submissions you will need the consensus genome fasta files, the raw reads, and the metadata. If you need to go back and check the validity of some SNP or indels calls, you may also need to bam files</p>
-<p><strong>Metadata:</strong> For all COVMIN and NEXSEQ runs, and all COVSEQ runs from COVSEQ_0062rq and greater, metadata is found in the results_RUNNAME_RUNDATE file e.g. (results_COVMIN_0009_2021-04-27), which are pushed to a shared Google Drive gs://covid_terra/COVSEQ_NNNN/terra_outputs/COVSEQ_NNNN_sequence_assembly_metrics.csv</p>
+<p><strong>Metadata:</strong> For all COVMIN and NEXSEQ runs, and all COVSEQ runs from COVSEQ_0062rq and greater, metadata is found in the results_RUNNAME_RUNDATE file e.g. (results_COVMIN_0009_2021-04-27), which are pushed and can be downloaded from a shared Google Drive</p>
 <p><strong>Consensus genome fasta files:</strong> the final consensus genome fasta files to be submitted are named accessionid_renamed_consensus.fa (e.g. 2100213088_consensus_renamed.fa) and is located in gs://covid_terra/run_directory/terra_outputs/assemblies/ (e.g. gs://covid_terra/COVMIN_0009/terra_outputs/assemblies/)</p>
-<p><strong>Raw reads:</strong> For Illumina MiSeq and NextSeq runs (COVSEQ and NEXSEQ), raw reads for each sample on the run can be found in gs://covid_terra/COVSEQ_NNNN/fastq_files/. For nanopore runs (COVMIN), the fastq files for each sample are in separate directories that are named based on each samples barcode (e.g. gs:// covid_terra/COVMIN_0009/fastq_pass/barcode02)</p>
-<p><strong>Bam files:</strong> bam files can be found in gs:// covid_terra/COVMIN_0009/terra_outputs/alignments)</p>
+<p><strong>Raw reads:</strong> For Illumina MiSeq and NextSeq runs (COVSEQ and NEXSEQ), raw reads for each sample on the run can be found in gs://covid_terra/COVSEQ_NNNN/fastq_files/. For nanopore runs (COVMIN), the fastq files for each sample are in separate directories that are named based on each samples barcode (e.g. gs:// covid_terra/COVMIN_0009/fastq_pass/barcode02), which need to be merged together (script built to do this)</p>
+<p><strong>Bam files:</strong> bam files can be found in gs:// covid_terra/SEQRUN_NNNN/terra_outputs/alignments (e.g. gs:// covid_terra/COVMIN_0009/terra_outputs/alignments)</p>
 <p><strong>Samples that have been re-run / resequenced:</strong> Some samples needed to be resequenced. A list of these samples can be found <a href="https://docs.google.com/spreadsheets/d/1PtaHHa8iuqM6fNGTSkHiinxc5poQnVt1Ti67yLSVQ6c/edit#gid=471638297">here</a>. This file will need to be downloaded before each submission so samples are not submitted more than once and the resequenced samples are being uploaded.</p>
 <p><strong>Extra information:</strong></p>
 <ol style="list-style-type: decimal">
@@ -361,7 +361,7 @@ back-up email: personal email</p>
 </li>
 <li>Login to your <a href="https://www.gisaid.org/">GISAID account</a>, then go to the EpiCoV tab, then select &gt; batch upload (you can ignore the CLI notification window that will pop up because the standard submission method is super easy. Upload your metadata csv, upload your fasta, and select “check and submit&quot;<br />
 </li>
-<li><p>You will receive an email once your sequences have been processed with those that have been released and another if GISAID finds any errors. They will either ask you to email them back with coverage information or respond by accessing the 'unreleased' tab on your GISAID account. If what gets kicked back does not match something that was already flagged by VADR, then check the bam file in IGV. GISAID may either just publish the sequences based on your or response email, or they may ask you to resubmit the ones that were flagged</p>
+<li><p>You will receive an email once your sequences have been processed with those that have been released and another if GISAID finds any errors. They will either ask you to email them back with coverage information or respond by accessing the 'unreleased' tab on your GISAID account (more recently the latter is more common). If the frameshift mutations don't match something that was already flagged by VADR, then check the bam file in IGV. Write out a new fasta file with the consensus sequences that were rejected (corrected and unchanged sequences if coverage supports the nucleotide seq) and replace this new fasta in the upload page on GISAID.</p>
 <p>Note that the email you get once the data are processed will contain all the GISAID accessions, but it will not say what samples they are linked to, so to get that information as well as Pangolin/Nextclade lineage information, you will need to go back to your gisaid account &gt; search &gt; fill in the submission date, and then download sequence technology metadata file.</p></li>
 </ol>
 </div>
@@ -406,14 +406,48 @@ back-up email: personal email</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Pull the fastq files from the google bucket onto your VM</span>
 <span class="ex">Add</span> code after it is tested</code></pre></div>
 <p>Code to pull reads for NEXSEQ</p>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Pull the fastq files from the google bucket onto your VM</span>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Pull the terra data tables for the sequencing runs</span>
+<span class="kw">while</span> <span class="bu">read</span> <span class="va">name</span>
+<span class="kw">do</span>
+<span class="ex">gsutil</span> cp gs://covid_terra/<span class="va">${name}</span>/<span class="va">${name}</span>_terra_data_table.tsv .
+<span class="kw">done</span> <span class="op">&lt;</span> <span class="va">${cur_wd}</span><span class="ex">/project_list.txt</span>
+
+<span class="co"># Pull seqs for SRA - in sequence_data dir</span>
+<span class="co"># </span><span class="al">WARNING</span><span class="co">: this code is specific for NEXSEQ</span>
+<span class="kw">while</span> <span class="bu">read</span> <span class="va">name</span>
+<span class="kw">do</span>
 <span class="kw">while</span> <span class="bu">read</span> <span class="va">acc</span> <span class="va">path</span>
 <span class="kw">do</span>
 <span class="ex">gsutil</span> -m cp <span class="va">$path</span> .
-<span class="kw">done</span> <span class="op">&lt;</span> <span class="ex">NEXSEQ_XXX_terra_data_table.tsv</span></code></pre></div>
+<span class="kw">done</span> <span class="op">&lt;</span> <span class="va">${name}</span><span class="ex">_terra_data_table.tsv</span>
+<span class="kw">done</span> <span class="op">&lt;</span> <span class="va">${cur_wd}</span><span class="ex">/project_list.txt</span></code></pre></div>
 <pre><code>There will be a single file for Illumina NextSeq runs (which are single-end). These are located in gs:// covid_terra/NEXSEQ_NNN/fastq_files/ are all named as “accesionid.fastq.gz”</code></pre>
 <p>Nanopore runs have a large number of fastq files associated with each sample. They are organized into barcode directories – one barcode directory per sample. E.g.: gs:// covid_terra/COVMIN_0009/fastq_pass/barcode02 contains all the fastq files for the sample that was barcoded with barcode02.</p>
 <p>Use the script get_cat_gzip_fastq.sh on <a href="https://github.com/CDPHE/seq-submission-metadata-R">Github</a> to compile all the barcodes into a single sample. This will also gzip the files so the names match the output from the R scripts</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># pull fastq files for Nanopore data - need to be concatted by barcode.  Script also checks if the files are gzipped and compresses them if they are not</span>
+<span class="kw">for</span> <span class="ex">run</span> in <span class="st">&quot;</span><span class="va">$@</span><span class="st">&quot;</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="bu">echo</span> <span class="va">$run</span>
+    <span class="fu">mkdir</span> -p <span class="va">${run}</span>_fastq
+    <span class="bu">cd</span> <span class="va">${run}</span>_fastq
+    <span class="co"># downloands run data</span>
+    <span class="ex">gsutil</span> -m cp gs://covid_terra/<span class="va">${run}</span>/<span class="va">${run}</span>_terra_data_table.tsv .
+
+    <span class="kw">while</span> <span class="bu">read</span> <span class="va">p</span>; <span class="kw">do</span>
+      <span class="bu">echo</span> <span class="va">$p</span>
+      <span class="va">accession=$(</span><span class="bu">echo</span> <span class="va">$p</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $1}'</span><span class="va">)</span>
+      <span class="bu">echo</span> <span class="va">$accession</span>
+      <span class="va">barcode=$(</span><span class="bu">echo</span> <span class="va">$p</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $2}'</span><span class="va">)</span>
+      <span class="va">path=$(</span><span class="bu">echo</span> <span class="va">$p</span> <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print $3}'</span><span class="va">)</span>
+      <span class="bu">echo</span> <span class="va">$barcode</span>
+         <span class="kw">if</span> <span class="ex">gsutil</span> ls <span class="va">${path}</span>/*.fastq.gz <span class="op">1&gt;</span> /dev/null <span class="op">2&gt;&amp;1</span><span class="kw">;</span> <span class="kw">then</span>
+            <span class="ex">gsutil</span> cat <span class="va">${path}</span>/*.fastq.gz <span class="op">&gt;</span> CO-CDPHE-<span class="va">${accession}</span>.fastq.gz
+         <span class="kw">else</span>
+            <span class="ex">gsutil</span> cat <span class="va">${path}</span>/*.fastq <span class="op">&gt;</span> CO-CDPHE-<span class="va">${accession}</span>.fastq
+            <span class="fu">gzip</span> CO-CDPHE-<span class="va">${accession}</span>.fastq
+         <span class="kw">fi</span>
+    <span class="kw">done</span> <span class="op">&lt;</span> <span class="op">&lt;(</span><span class="fu">tail</span> -n +3 <span class="va">${run}</span>_terra_data_table.tsv<span class="op">)</span>
+
+<span class="kw">done</span></code></pre></div>
 <ol start="2" style="list-style-type: decimal">
 <li>Prepare your metadata file using the R script: ncbi_sra_metadata_formatting.R</li>
 <li>Go to your NCBI Submissions Portal &gt; Sequence Read Archive &gt; New Submission</li>
@@ -442,20 +476,19 @@ back-up email: personal email</p>
 <ol style="list-style-type: decimal">
 <li>Go to you NCBI Submissions portal &gt; GenBank &gt; New Submission<br />
 </li>
-<li>Under Submission Type &gt; What do your sequences contain? Selection “SARS-CoV2, Influenza…” then for Which virus? Also select “SARS-CoV-2.” You can leave the submission title blank<br />
+<li>Under Submission Type &gt; What do your sequences contain? Selection “SARS-CoV2, Influenza…” then for Which virus? Also select “SARS-CoV-2.” You can leave the submission title blank, but I fill in with the batch number in case I need to quickly reference which set of samples were included<br />
 </li>
-<li>Submitter Information is the same as for everything else<br />
-</li>
+<li>Submitter Information is the same as for other NCBI submissions</li>
 <li>Under sequencing technology select either “Illumina” for an batch of MiSeq or NextSeq samples, or “Other” if the batch is of assemblies from nanopore data (then put Oxford Nanopore in the field that appears). Then select assembled sequences
 <ul>
 <li>For Assembly information for Illumina data put minimap2 v.2.1, and iVar v.1.3.1</li>
 <li>For Assembly information Nanopore assemblies put Arctic MinION JAN-2020</li>
 </ul></li>
 <li>Under Sequences, select “release immediately following processing”</li>
-<li>Then upload the fasta file you generated (GenBank doesn't accept dashes and you need to add the NCBI project number so GenBank adds it to the right project)</li>
+<li>Then upload the fasta file you generated (GenBank doesn't accept dashes and you need to add the NCBI project number so GenBank adds it to the right project - code has been developed to do this as well)</li>
 <li>Select 'None of these' for naming convention</li>
-<li>Select 'String of N's represents missing sequence against a reference'</li>
-<li>Depending on where we are against historic data either select 'yes' - Genbank will remove these from your submission and release the rest. You'll need to track these to reupload later. If you select 'no' then you will go back and forth with GenBank with coverage information etc.</li>
+<li>Select 'String of N's represents expected missing sequence against a reference'</li>
+<li>Depending on where we are against historic data either select 'yes' - Genbank will remove these from your submission and release the rest. The final Rscript will pull the metadata for the rejected samples to add to the 'ONGOING_submissions&quot; tab&quot;. If you select 'no' then you will go back and forth with GenBank with coverage information etc.</li>
 <li>Under the “Source Modifiers” tab you will upload your GenBank metadata tsv file</li>
 <li>Under References you will List: Laura Bankers, Molly C. Hetherington-Rauth, Diana Ir, Alexandria Rossheim, Michael A. Martin, Mandy Waters, Shannon R. Matzinger, Sarah Elizabeth Totten, Emily A. Travanty – If names are not correct, please change them in the gisaid template section of the submissions google sheet, so that they are up to date.
 <ul>
@@ -553,7 +586,7 @@ back-up email: personal email</p>
 <h3>Preparing script and installing packages</h3>
 <div id="prep-scripts" class="section level4">
 <h4>Prep scripts</h4>
-<p>Outlined here is instructions to make the R script executable on your VM and load necessary packages. First step is to clone the R scripts to your VM from the CDPHE Github <a href="https://github.com/CDPHE/seq-submission-metadata-R">link</a>. Next you need to update the shebang line of each script to point to your Rscript directory.</p>
+<p>Outlined here is instructions to make the R script executable on your VM and load necessary packages. First step is to clone the R scripts to your VM from the CDPHE Github <a href="https://github.com/CDPHE/seq-submission-metadata-R">link</a>.</p>
 <p>Now make the R scripts executable (for some reason R scripts do not default as executable)</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">chmod</span> +x gisaid_ncbi_biosample_metadata_formatting.R</code></pre></div>
 <p>Now install the packages as outlined in the 'Install packages' tab.</p>
@@ -590,7 +623,8 @@ back-up email: personal email</p>
 <h4>Useage</h4>
 <p>In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.*.csv in directory), concats the files, filters for samples &gt; 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample, a file that lists the current sample names and GISAID formatted names (users can then use awk command to rename samples), a file if any samples are missing the collection date, a file if the samples have a collection date prior to 2020, a file if those samples have already been uploaded (resequenced, but not because they failed), and a file if samples have been rerun because they failed or had contamination. The metadata file will be written out for samples with &gt;50 coverage and are the latest sequencing results. You can run this R script directly from the command line. You will need to supply 6 pieces of information as options / flags when running the script.</p>
 <p><strong>Script name:</strong> gisaid_ncbi_biosample_metadata_formatting.R<br />
-<strong>Input files:</strong> results_.*.tsv (pull all files with this regex), samples_already_submitted_*.tsv, samples_rerun_*.tsv <strong>Options / flags:</strong> required to fill in all. The code will check spelling on the sequencing information and will error out if something is misspelled (options in #4 below)</p>
+<strong>Input files:</strong> results_.*.tsv (pull all files with this regex), samples_already_submitted_*.tsv, samples_rerun_*.tsv<br />
+<strong>Options / flags:</strong> required to fill in all. The code will check spelling on the sequencing information and will error out if something is misspelled (options in #4 below)</p>
 <ol style="list-style-type: decimal">
 <li>-m | --metadata = path/to/seq_metadata/files # This also sets the working directory to write files</li>
 <li>-f | --fasta_name = name_fasta_file_to_submit.fa # name of fasta file you will submit to GISAID</li>
@@ -609,7 +643,7 @@ back-up email: personal email</p>
 <span class="ex">Rscript</span> gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type <span class="st">&quot;Oxford Nanopore GridION&quot;</span> --rerun_file /home/mandy_waters/rerun_samples_11Sep2021.tsv --completed_file /home/mandy_waters/samples_already_submitted_11Sep2021.tsv
 
 <span class="co"># Strings with spaces need quotes</span></code></pre></div>
-<p><strong>Output to terminal:</strong> Script prints the strings the user input for you to check. If you don't privde values for all flags then the script will error out and tell you which flag(s) are missing. The script will also error out if the sequence type name is misspelled. A warning will print that lists the accession name, coverage, and project number for samples that are missing a collection date or have a collection date prior to 2020. It will not error out, but will print this info and write it to a file for users to review. Another warning (will not error out) will be printed if samples in your current batch have already been submitted. It will print relevant information from the COMPLETED tab in the metadata tracking excel sheet on Google Drive.</p>
+<p><strong>Output to terminal:</strong> Script prints the strings the user input for you to check. If you don't provide values for all flags then the script will error out and tell you which flag(s) are missing. The script will also error out if the sequence type name is misspelled. A warning and file will be printed / written that lists the accession name, coverage, and project number for samples that are missing a collection date or have a collection date prior to 2020. It will not error out, but will print this info and write it to a file for users to review. Another warning (will not error out) will be print if samples in your current batch have already been submitted or have been rerun. Samples will be dropped if they have already been submitted to GISAID or NCBI or are in the initial round of sequencing. It will print relevant information from the COMPLETED tab or ONGOING tab (if rejected by GenBank) in the metadata tracking excel sheet on Google Drive.</p>
 <p>You should see something like the following regardless of short or long flag names</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Rscript gisaid_ncbi_biosample_metadata_formatting.R <span class="op">--</span>metadata <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>test_metadata <span class="op">-</span>f test_fasta.fa <span class="op">--</span>submitter_name mandywaters <span class="op">--</span>seq_type <span class="st">&quot;Oxford Nanopore GridION&quot;</span> <span class="op">--</span>rerun_file <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>rerun_samples_11Sep2021.tsv <span class="op">--</span>completed_file <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>samples_already_submitted_11Sep2021.tsv
 
@@ -646,7 +680,7 @@ WARNING<span class="op">:</span><span class="st"> </span>the samples below have 
 
 Checking and deleting metadata <span class="cf">for</span> samples that have been re<span class="op">-</span>run post projects <span class="cf">in</span> this batch
 
-WARNING<span class="op">:</span><span class="st"> </span>the samples below have been submitted with a previous project<span class="op">:</span>
+WARNING<span class="op">:</span><span class="st"> </span>the samples below have already been submitted and are being deleted from the dataset<span class="op">:</span>
 <span class="st">    </span>submitter accession_id instrument_model    BioSample         SRA  GenBank
  mandy.waters   <span class="dv">2101448151</span>  OXFORD_NANOPORE SAMN21243277 SRR15899746 OK160504
  mandy.waters   <span class="dv">2101448165</span>  OXFORD_NANOPORE SAMN21243254 SRR15899803 OK160643
@@ -856,7 +890,8 @@ submitter name<span class="op">:</span>
 mandy.waters</code></pre></div>
 <p><strong>Output files:</strong></p>
 <ol style="list-style-type: decimal">
-<li>Compiled metadata for submission excel: final_submission_tracking_date_metadata.tsv (e.g. final_submission_tracking_2021-07-31_metadata.tsv)</li>
+<li>Compiled metadata for samples accepted by all submission sites to be tracked in 'COMPLETED_submissions' tab: COMPLETED_date_metadata.tsv (e.g. COMPLETED_2021-10-10_metadata.tsv)</li>
+<li>CONDITIONAL: compiled metadata for samples rejected by GenBank to be tracked in 'ONGOING_submissions' tab: ONGOING_genbank_missing_date_metadata.tsv (e.g. ONGOING_genbank_missing_2021-10-10_metadata.tsv)</li>
 </ol>
 </div>
 <div id="error-example-3" class="section level4">

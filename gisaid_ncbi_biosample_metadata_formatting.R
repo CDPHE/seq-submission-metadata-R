@@ -1,10 +1,10 @@
 # Mandy Waters
 # July 2021
 # Script to read in COVID sequencing output metadata and write out a GISAID and NCBI biosample formatted metadata sheet for samples with >50% coverage
-# Usage (short) = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m "path/to/metadata_sheets" -f fasta_file.fa -s submitter_name -t "sequencing type" -r "rerun_file"
-# Usage (long) = Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata "path/to/metadata_sheets"  --fasta_name fasta_file.fa --submitter_name submitter_name --seq_type "sequencing type" --rerun_file /path/to/rerun_filename.tsv
+# Usage (short) = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m "path/to/metadata_sheets" -f fasta_file.fa -s submitter_name -t "sequencing type" -r "rerun_file" -c files_in_completed_tab.tsv
+# Usage (long) = Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata "path/to/metadata_sheets"  --fasta_name fasta_file.fa --submitter_name submitter_name --seq_type "sequencing type" --rerun_file /path/to/rerun_filename.tsv --completed_file /path/to/completed_file.tsv
 # Usage notes: only strings with spaces need quotes
-# Usage example = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/metadata -f GISAID_upload_sequences.fa -s mandy_waters -t "Oxford Nanopore GridION" -r /home/mandy_waters/rerun_samples_12Sep2021.tsv
+# Usage example = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/metadata -f GISAID_upload_sequences.fa -s mandy_waters -t "Oxford Nanopore GridION" -r /home/mandy_waters/rerun_samples_25Sep2021.tsv -c /home/mandy_waters/completed_submissions_25Sep2021.tsv
 
 # load packages, but don't print the messages to terminal
 suppressPackageStartupMessages(require(optparse))
@@ -53,15 +53,15 @@ if (opt$v) {
   cat("\n\n")
 }
 
-# if all options are filled in then fill in the metadata otherwise error out
+# if all options are filled in and sequencing type is spelled correctly then fill in the metadata otherwise error out
 if(!is.na(opt$metadata) & !is.na(opt$submitter_name) & !is.na(opt$seq_type) & !is.na(opt$fasta_name) & !is.na(opt$rerun_file) & !is.na(opt$completed_file)){
   if(opt$seq_type == "Illumina MiSeq" | opt$seq_type == "Illumina NextSeq" | opt$seq_type == "Oxford Nanopore GridION"){
 
-# set working directory
+# set working directory and get date
 setwd(opt$metadata)
 date = Sys.Date()
 
-# Reading in all metadata sheets, subsetting out the columns needed, pulling samples with >= 50% coverage
+# Reading in all metadata sheets, subsetting out the columns needed, getting rid of blanks and controls, and pulling samples with >= 50% coverage
 metadata_readin = ldply(list.files(pattern = "results_.*.tsv"), read.delim, header=TRUE, na.strings = c("","sample failed assembly"), check.names = FALSE)
 cols_to_keep = as.data.frame(c("accession_id", "percent_non_ambigous_bases", "collection_date", "fasta_header", "seq_run"))
 colnames(cols_to_keep) = "col_names"
@@ -69,6 +69,8 @@ metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_k
 patterns <- c("Blank", "NC", "NTC", "ExtractionPositive", "DiaplexPositive", "POS")
 metadata_no_blank_nc = filter(metadata_subset_cols, !grepl(paste(patterns, collapse="|"), accession_id))
 metadata_50_cov = metadata_no_blank_nc[metadata_no_blank_nc$percent_non_ambigous_bases >= 50.0,]
+
+# identifying if duplicate accessions exist
 dups = as.data.frame(metadata_50_cov[duplicated(metadata_50_cov$accession_id),c(1,5)])
 colnames(dups) = c("duplicate_accessions", "seq_run")
 
@@ -83,10 +85,12 @@ if(length(dups>0)){
 metadata_50_cov = metadata_50_cov[order(metadata_50_cov[,"accession_id"],-metadata_50_cov[,"percent_non_ambigous_bases"]),]
 metadata_50_cov = metadata_50_cov[!duplicated(metadata_50_cov$accession_id),]
 
-# pulling samples that have missing or iincorrect (priror to 2020) collection date
+# pulling samples that have missing or incorrect (priror to 2020) collection date
 missing_collection_date = as.data.frame(metadata_50_cov[is.na(metadata_50_cov$collection_date),c(1,2,3,5)])
 missing_collection_date_removed = as.data.frame(metadata_50_cov[!is.na(metadata_50_cov$collection_date),c(1,2,3,5)])
 collection_date_wrong = as.data.frame(missing_collection_date_removed[str_sub(missing_collection_date_removed$collection_date,start=1,end=4) < 2020, c(1,2,3,4)])
+
+# Get list of project numbers being submitted, so can either keep if these are the rerun projects or drop if they were the original
 project_list = as.data.frame(unique(metadata_readin$seq_run))
 colnames(project_list) = "projects"
 
@@ -102,7 +106,7 @@ completed_accessions = completed_readin[completed_readin$accession_id %in% metad
 rerun_check = rerun_readin[rerun_readin$accession_id %in% metadata_readin$accession_id,c(1,2,3,4)]
 
 # Printing warnings and files for checks
-# missing colsetlection date
+# missing collection date
 if(length(missing_collection_date >0)){
 cat("\nWARNING: the samples below are missing a collection date:\n")
 print(missing_collection_date, row.names = FALSE)
@@ -119,6 +123,7 @@ if(length(collection_date_wrong > 0)){
 }
 
 cat("Checking and deleting metadata for samples that have been re-run after projects in this batch\n\n")
+
 # rerun samples
 if(length(rerun_check > 0)){
   cat("\nWARNING: the samples below have been submitted under multiple projects.  If you are processing the project in 'first_run' these samples will be removed from the dataset:\n")
@@ -150,6 +155,7 @@ if(length(completed_accessions > 0)){
 gisad_metadata = as.data.frame(matrix("",ncol=29,nrow=nrow(metadata_50_cov)))
 colnames(gisad_metadata) = c("submitter","fn","covv_virus_name","covv_type","covv_passage","covv_collection_date","covv_location","covv_add_location","covv_host","covv_add_host_info","covv_gender","covv_patient_age","covv_patient_status","covv_specimen","covv_outbreak","covv_last_vaccinated","covv_treatment","covv_seq_technology","covv_assembly_method","covv_coverage","covv_orig_lab","covv_orig_lab_addr","covv_provider_sample_id","covv_subm_lab","covv_subm_lab_addr","covv_subm_sample_id","covv_authors","covv_comment","comment_type")
 
+# Creating an empty matrix for file to rename fasta with GISAID formatted names
 rename_fasta = as.data.frame(matrix("",ncol=3,nrow=nrow(metadata_50_cov)))
 colnames(rename_fasta) = c("accesion_id", "gisaid_name", "proj_num")
 
@@ -179,6 +185,7 @@ for (i in 1:nrow(gisad_metadata)){
   rename_fasta[i,3] = metadata_50_cov[i,5]
 }
 
+# write out gisaid and renaming fasta files
 write.csv(gisad_metadata, file = paste("gisaid_submission", date, "metadata.csv",sep="_"), row.names = FALSE, quote = TRUE)
 write.csv(rename_fasta, "fasta_rename_accession_to_gisaid_id.csv", row.names = FALSE, quote = FALSE)
 write.table(rename_fasta, "fasta_rename_accession_to_gisaid_id.tsv", row.names = FALSE, quote = FALSE, sep = "\t")
@@ -187,6 +194,7 @@ write.table(rename_fasta, "fasta_rename_accession_to_gisaid_id.tsv", row.names =
 ncbi_biosample_metadata = as.data.frame(matrix("",ncol=48,nrow=nrow(metadata_50_cov)))
 colnames(ncbi_biosample_metadata)= c("sample_name","sample_title","bioproject_accession","organism","collected_by","collection_date","geo_loc_name","host","host_disease","isolate","isolation_source","antiviral_treatment_agent","collection_device","collection_method","date_of_prior_antiviral_treat","date_of_prior_sars_cov_2_infection","date_of_sars_cov_2_vaccination","exposure_event","geo_loc_exposure","gisaid_accession","gisaid_virus_name","host_age","host_anatomical_material","host_anatomical_part","host_body_product","host_disease_outcome","host_health_state","host_recent_travel_loc","host_recent_travel_return_date","host_sex","host_specimen_voucher","host_subject_id","lat_lon","passage_method","passage_number","prior_sars_cov_2_antiviral_treat","prior_sars_cov_2_infection","prior_sars_cov_2_vaccination","purpose_of_sampling","purpose_of_sequencing","sars_cov_2_diag_gene_name_1","sars_cov_2_diag_gene_name_2","sars_cov_2_diag_pcr_ct_value_1","sars_cov_2_diag_pcr_ct_value_2","sequenced_by","vaccine_received","virus_isolate_of_prior_infection","description")
 
+# Fill in with static information
 ncbi_biosample_metadata$sample_title = "PCR tiled amplicon WGS of SARS-CoV-2"
 ncbi_biosample_metadata$bioproject_accession = "PRJNA686984"
 ncbi_biosample_metadata$organism = "Severe acute respiratory syndrome coronavirus 2"
@@ -196,11 +204,13 @@ ncbi_biosample_metadata$host = "Homo sapiens"
 ncbi_biosample_metadata$host_disease = "severe accute respiratory syndrome"
 ncbi_biosample_metadata$isolation_source = "patient isolate"
 
+# Fill in with data that is unique for each row
 for (i in 1:nrow(gisad_metadata)){
 ncbi_biosample_metadata[i,1] = paste("CO-CDPHE-", metadata_50_cov[i,1],sep="") # sample_name
 ncbi_biosample_metadata[i,10] = paste("CO-CDPHE-", metadata_50_cov[i,1],sep="") # isolate
 ncbi_biosample_metadata[i,6] = metadata_50_cov[i,3] # collection_date
 }
+
 } else {
   cat("ERROR: check the spelling of your sequence type input: sequence type should match 'Illumina MiSeq', 'Illumina NextSeq', or 'Oxford Nanopore GridION'\n\n")
   }
@@ -208,4 +218,5 @@ ncbi_biosample_metadata[i,6] = metadata_50_cov[i,3] # collection_date
   cat("ERROR: you didn't specify all varialbles. Please supply all required options. Type Rscript gisaid_ncbi_biosample_metadata_formatting.R -h for list of required options\n\n") # print error messages
 }
 
+# write biosample metadata file
 write.table(ncbi_biosample_metadata, file=paste("ncbi_biosample_submission", date, "metadata.tsv", sep="_"), row.names = FALSE, quote = FALSE, sep = '\t')
