@@ -56,7 +56,7 @@ colnames(sra_metadata) = c("bioproject_accession","biosample_accession","library
 
 # Filling in columns whose values do not change or will be put in with options
 sra_metadata$bioproject_accession = sra$BioProject
-sra_metadata$sra_accession = sra$Accession
+sra_metadata$biosample_accession = sra$Accession
 sra_metadata$title = "PCR tiled amplicon WGS of SARS-CoV-2"
 sra_metadata$library_strategy = "AMPLICON"
 sra_metadata$library_source = "VIRAL RNA"
