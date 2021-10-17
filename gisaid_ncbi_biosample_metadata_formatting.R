@@ -1,10 +1,10 @@
 # Mandy Waters
 # July 2021
 # Script to read in COVID sequencing output metadata and write out a GISAID and NCBI biosample formatted metadata sheet for samples with >50% coverage
-# Usage (short) = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m "path/to/metadata_sheets" -f fasta_file.fa -s submitter_name -t "sequencing type" -r "rerun_file" -c files_in_completed_tab.tsv
-# Usage (long) = Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata "path/to/metadata_sheets"  --fasta_name fasta_file.fa --submitter_name submitter_name --seq_type "sequencing type" --rerun_file /path/to/rerun_filename.tsv --completed_file /path/to/completed_file.tsv
+# Usage (short) = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m "path/to/metadata_sheets" -f fasta_file.fa -s submitter_name -t "sequencing type" -r  /path/to/rerun_filename.tsv -c /path/to/completed_file.tsv -o /path/to/ongoing_submissions.tsv
+# Usage (long) = Rscript gisaid_ncbi_biosample_metadata_formatting.R --metadata "path/to/metadata_sheets"  --fasta_name fasta_file.fa --submitter_name submitter_name --seq_type "sequencing type" --rerun_file /path/to/rerun_filename.tsv --completed_file /path/to/completed_file.tsv --ongoing_file /path/to/ongoing_submissions.tsv
 # Usage notes: only strings with spaces need quotes
-# Usage example = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/metadata -f GISAID_upload_sequences.fa -s mandy_waters -t "Oxford Nanopore GridION" -r /home/mandy_waters/rerun_samples_25Sep2021.tsv -c /home/mandy_waters/completed_submissions_25Sep2021.tsv
+# Usage example = Rscript gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/metadata -f GISAID_upload_sequences.fa -s mandy_waters -t "Oxford Nanopore GridION" -r /home/mandy_waters/rerun_samples_17Oct2021.tsv -c /home/mandy_waters/completed_submissions_17Oct2021.tsv -o /home/mandy_waters/ongoing_submissions_17Oct2021.tsv
 
 # load packages, but don't print the messages to terminal
 suppressPackageStartupMessages(require(optparse))
@@ -31,13 +31,16 @@ option_list = list(
               help="REQUIRED: path and file name for text file with rerun information as downloaded from Google Drive"),
   make_option(c("-c", "--completed_file"), action="store", default=NA, type='character',
               help="REQUIRED: path and file name for text file with completed submission information as downloaded from Google Drive"),
-  make_option(c("-t", "--seq_type"), action="store", default=NA, type='character',
+  make_option(c("-o", "--ongoing_file"), action="store", default=NA, type='character',
+              help="REQUIRED: path and file name for text file with ongoing submission information as downloaded from Google Drive"),
+    make_option(c("-t", "--seq_type"), action="store", default=NA, type='character',
               help="REQUIRED: sequencing type as a string in quotes that has to match 'Illumina MiSeq', 'Illumina NextSeq', or 'Oxford Nanopore GridION'")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
 if (opt$v) {
   # print the variables to the terminal
+  cat("\nINPUT FILES AND FLAGS:\n")
   cat("\nmetadata path:\n")
   cat(opt$metadata)
   cat("\n\nname of fasta file to submit to GISAID:\n")
@@ -50,11 +53,13 @@ if (opt$v) {
   cat(opt$rerun_file)
   cat("\n\nname of completed submissions file:\n")
   cat(opt$completed_file)
+  cat("\n\nname of ongoing submissions file:\n")
+  cat(opt$ongoing_file)
   cat("\n\n")
 }
 
 # if all options are filled in and sequencing type is spelled correctly then fill in the metadata otherwise error out
-if(!is.na(opt$metadata) & !is.na(opt$submitter_name) & !is.na(opt$seq_type) & !is.na(opt$fasta_name) & !is.na(opt$rerun_file) & !is.na(opt$completed_file)){
+if(!is.na(opt$metadata) & !is.na(opt$submitter_name) & !is.na(opt$seq_type) & !is.na(opt$fasta_name) & !is.na(opt$rerun_file) & !is.na(opt$completed_file) & !is.na(opt$ongoing_file)){
   if(opt$seq_type == "Illumina MiSeq" | opt$seq_type == "Illumina NextSeq" | opt$seq_type == "Oxford Nanopore GridION"){
 
 # set working directory and get date
@@ -63,7 +68,16 @@ date = Sys.Date()
 
 # Reading in all metadata sheets, subsetting out the columns needed, getting rid of blanks and controls, and pulling samples with >= 50% coverage
 metadata_readin = ldply(list.files(pattern = "results_.*.tsv"), read.delim, header=TRUE, na.strings = c("","sample failed assembly"), check.names = FALSE)
-cols_to_keep = as.data.frame(c("accession_id", "percent_non_ambigous_bases", "collection_date", "fasta_header", "seq_run"))
+
+# check if you have surveillance data.  If you do add it to the cols_to_keep and fill in metadata later or leave that blank
+if("surveillance" %in% colnames(metadata_readin)){
+  cols_to_keep = as.data.frame(c("accession_id", "percent_non_ambigous_bases", "collection_date", "fasta_header", "seq_run", "surveillance"))
+  cat("\nSURVEILLANCE:\nrestults.tsv files have surveillance data\n\n")
+}else{
+  cols_to_keep = as.data.frame(c("accession_id", "percent_non_ambigous_bases", "collection_date", "fasta_header", "seq_run"))
+  cat("\nSURVEILLANCE:\nresults.tsv files DO NOT have surveillance data\n\n")
+}
+
 colnames(cols_to_keep) = "col_names"
 metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
 patterns <- c("Blank", "NC", "NTC", "ExtractionPositive", "DiaplexPositive", "POS")
@@ -76,12 +90,12 @@ colnames(dups) = c("duplicate_accessions", "seq_run")
 
 # print warning if accession is in batch more than once
 if(length(dups>0)){
-  cat("\nWARNING: the follwoing samples were duplicated in the batch. The sample with higher coverage will be retained\n")
+  cat("\nWITHIN SUBMISSION BATCH DUPS:\nWARNING: the follwoing samples were duplicated in the batch. The sample with higher coverage will be retained\n")
   print(dups, row.names = FALSE)
   cat('\n')
 }
 
-# Droopping the sample with lower coverage
+# Dropping the sample with lower coverage
 metadata_50_cov = metadata_50_cov[order(metadata_50_cov[,"accession_id"],-metadata_50_cov[,"percent_non_ambigous_bases"]),]
 metadata_50_cov = metadata_50_cov[!duplicated(metadata_50_cov$accession_id),]
 
@@ -97,18 +111,20 @@ colnames(project_list) = "projects"
 # Read in the Re-run file and strip off info in parens in the first run column
 rerun_readin = read.delim(opt$rerun_file, header = TRUE)
 rerun_readin$first_run = gsub("\\s*\\([^\\)]+\\)","",as.character(rerun_readin$first_run))
+rerun_check = rerun_readin[rerun_readin$accession_id %in% metadata_readin$accession_id,c(1,2,3,4)]
 
 # Read in the completed tab 
 completed_readin = read.delim(opt$completed_file, header = TRUE)
 completed_accessions = completed_readin[completed_readin$accession_id %in% metadata_50_cov$accession_id,]
 
-# Find if samples are part of the rerun set
-rerun_check = rerun_readin[rerun_readin$accession_id %in% metadata_readin$accession_id,c(1,2,3,4)]
+# Read in the ongoing tab
+ongoing_reading = read.delim(opt$ongoing_file, header = TRUE)
+ongoing_accessions = ongoing_reading[ongoing_reading$accession_id %in% metadata_50_cov$accession_id,]
 
 # Printing warnings and files for checks
 # missing collection date
 if(length(missing_collection_date >0)){
-cat("\nWARNING: the samples below are missing a collection date:\n")
+cat("\nMISSING COLLECTION DATES\nWARNING: the samples below are missing a collection date:\n")
 print(missing_collection_date, row.names = FALSE)
 cat('\n')
 write.table(missing_collection_date, paste("samples_missing_collection_date_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
@@ -116,17 +132,15 @@ write.table(missing_collection_date, paste("samples_missing_collection_date_", d
 
 # wrong collection date
 if(length(collection_date_wrong > 0)){
-  cat("\nWARNING: the samples below have a collection date before 2020:\n")
+  cat("\nWRONG COLLECTION DATE:\nWARNING: the samples below have a collection date before 2020:\n")
   print(collection_date_wrong, row.names = FALSE)
   cat('\n')
   write.table(collection_date_wrong, paste("samples_wrong_collection_date_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
 }
 
-cat("Checking and deleting metadata for samples that have been re-run after projects in this batch\n\n")
-
 # rerun samples
 if(length(rerun_check > 0)){
-  cat("\nWARNING: the samples below have been submitted under multiple projects.  If you are processing the project in 'first_run' these samples will be removed from the dataset:\n")
+  cat("\nBAD NOODLES:\nWARNING: the samples below have been submitted under multiple projects.  If you are processing the project in 'first_run' these samples will be removed from the dataset:\n")
   print(rerun_check[,c(1,2,3)], row.names = FALSE)
   cat('\n')
   write.table(rerun_check, paste("samples_rerun_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
@@ -139,7 +153,7 @@ if(length(rerun_check > 0)){
 
 # already submitted
 if(length(completed_accessions > 0)){
-  cat("\nWARNING: the samples below have already been submitted and are being deleted from the dataset:\n")
+  cat("\nALREAD SUBMITTED:\nWARNING: the samples below have already been submitted (completed submissions) and are being deleted from the dataset:\n")
   completed_accessions_print_out = completed_accessions[,c(1,2,6,12,13,14,15,16)]
   print(completed_accessions_print_out, row.names = FALSE)
   cat('\n')
@@ -150,14 +164,26 @@ if(length(completed_accessions > 0)){
   write.table(completed_accessions, paste("samples_already_submitted_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
 }
 
+# ongoing submissions
+if(length(ongoing_accessions > 0)){
+  cat("\nON-GOING SUBMISSIONS:\nWARNING: the samples below are in progress of already being submitted (ongoing submissions) and are being deleted from the dataset:\n")
+  ongoing_accessions_print_out = ongoing_accessions[,c(2,5,12,14,15)]
+  print(ongoing_accessions_print_out, row.names = FALSE)
+  cat('\n')
+  # Removing samples if they are already in progress
+  for (i in 1:nrow(ongoing_accessions)){
+    metadata_50_cov = metadata_50_cov[!(metadata_50_cov$accession_id == ongoing_accessions[i,2]),] 
+  }
+  write.table(ongoing_accessions, paste("samples_in_progress_already_", date, ".tsv", sep = ""), row.names = FALSE, quote = FALSE, sep = '\t')
+}
 
 # Creating an empty matrix to fill in with metadata in GISAID format
-gisad_metadata = as.data.frame(matrix("",ncol=29,nrow=nrow(metadata_50_cov)))
-colnames(gisad_metadata) = c("submitter","fn","covv_virus_name","covv_type","covv_passage","covv_collection_date","covv_location","covv_add_location","covv_host","covv_add_host_info","covv_gender","covv_patient_age","covv_patient_status","covv_specimen","covv_outbreak","covv_last_vaccinated","covv_treatment","covv_seq_technology","covv_assembly_method","covv_coverage","covv_orig_lab","covv_orig_lab_addr","covv_provider_sample_id","covv_subm_lab","covv_subm_lab_addr","covv_subm_sample_id","covv_authors","covv_comment","comment_type")
+gisad_metadata = as.data.frame(matrix("",ncol=30,nrow=nrow(metadata_50_cov)))
+colnames(gisad_metadata) = c("submitter","fn","covv_virus_name","covv_type","covv_passage","covv_collection_date","covv_location","covv_add_location","covv_host","covv_add_host_info","covv_sampling_strategy","covv_gender","covv_patient_age","covv_patient_status","covv_specimen","covv_outbreak","covv_last_vaccinated","covv_treatment","covv_seq_technology","covv_assembly_method","covv_coverage","covv_orig_lab","covv_orig_lab_addr","covv_provider_sample_id","covv_subm_lab","covv_subm_lab_addr","covv_subm_sample_id","covv_authors","covv_comment","comment_type")
 
 # Creating an empty matrix for file to rename fasta with GISAID formatted names
-rename_fasta = as.data.frame(matrix("",ncol=3,nrow=nrow(metadata_50_cov)))
-colnames(rename_fasta) = c("accesion_id", "gisaid_name", "proj_num")
+rename_fasta = as.data.frame(matrix("",ncol=4,nrow=nrow(metadata_50_cov)))
+colnames(rename_fasta) = c("accesion_id", "gisaid_name", "proj_num", "ncbi_name")
 
 # Filling in columns whose values do not change or will be put in with options
 gisad_metadata$submitter = opt$submitter_name
@@ -180,9 +206,21 @@ gisad_metadata$covv_authors = "Laura Bankers, Molly C. Hetherington-Rauth, Diana
 for (i in 1:nrow(gisad_metadata)){
   gisad_metadata[i,6] = metadata_50_cov[i,3] # covv_collection_date
   gisad_metadata[i,3] = paste("hCoV-19/USA/CO-CDPHE-", metadata_50_cov[i,1], "/", str_sub(gisad_metadata[i,6],start=1,end=4),sep="") # covv_virus_name
+  # fill in surveillance data if it is available
+  if("surveillance" %in% colnames(metadata_50_cov)){
+    gisad_metadata[i,11] = metadata_50_cov[i,6] # covv_sampling_strategy 
+  }
   rename_fasta[i,1] = paste("CO-CDPHE-", metadata_50_cov[i,1], sep = "")
   rename_fasta[i,2] = paste("hCoV-19/USA/CO-CDPHE-", metadata_50_cov[i,1], "/", str_sub(gisad_metadata[i,6],start=1,end=4),sep="")
   rename_fasta[i,3] = metadata_50_cov[i,5]
+  if("surveillance" %in% colnames(metadata_50_cov)){
+    if(metadata_50_cov[i,6] == "baseline surveillance"){
+    rename_fasta[i,4] = paste(rename_fasta[i,2], " [PRJNA686984]", " [keyword=purposeofsampling:baselinesurveillance]", sep="")
+    }else if(metadata_50_cov[i,6] == "targeted surveillance"){
+    rename_fasta[i,4] = paste(rename_fasta[i,2], " [PRJNA686984]", " [keyword=purposeofsampling:baselinesurveillance]", sep="")
+    }
+    }else{rename_fasta[i,4] = paste(rename_fasta[i,2], " [PRJNA686984]", sep="")
+    }
 }
 
 # write out gisaid and renaming fasta files
@@ -220,3 +258,5 @@ ncbi_biosample_metadata[i,6] = metadata_50_cov[i,3] # collection_date
 
 # write biosample metadata file
 write.table(ncbi_biosample_metadata, file=paste("ncbi_biosample_submission", date, "metadata.tsv", sep="_"), row.names = FALSE, quote = FALSE, sep = '\t')
+
+cat("\nFINISHED! Please check warnings and output files\n\n")
