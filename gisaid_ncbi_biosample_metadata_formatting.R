@@ -217,7 +217,7 @@ for (i in 1:nrow(gisad_metadata)){
     if(metadata_50_cov[i,6] == "baseline surveillance"){
     rename_fasta[i,4] = paste(rename_fasta[i,2], " [PRJNA686984]", " [keyword=purposeofsampling:baselinesurveillance]", sep="")
     }else if(metadata_50_cov[i,6] == "targeted surveillance"){
-    rename_fasta[i,4] = paste(rename_fasta[i,2], " [PRJNA686984]", " [keyword=purposeofsampling:baselinesurveillance]", sep="")
+    rename_fasta[i,4] = paste(rename_fasta[i,2], " [PRJNA686984]", " [keyword=purposeofsampling:targetedsurveillance]", sep="")
     }
     }else{rename_fasta[i,4] = paste(rename_fasta[i,2], " [PRJNA686984]", sep="")
     }
