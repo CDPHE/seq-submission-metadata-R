@@ -74,12 +74,20 @@ if(!is.na(opt$path) & !is.na(opt$submitter_name)){
     }
 
     # Read in results file to get seq_run number
-    metadata_readin = ldply(list.files(pattern = "results_.*.tsv"), read.delim, header=TRUE, na.strings = c("","sample failed assembly"), check.names = FALSE)
-    cols_to_keep = as.data.frame(c("accession_id","seq_run"))
-    colnames(cols_to_keep) = "col_names"
-    metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
+    # If running the code after I added the step to print out the filtered results else just read in, concat, and filter the results.tsv files
+    if (file.exists("filtered_results_subset_metadata.tsv")) {
+      metadata_readin = read.delim("filtered_results_subset_metadata.tsv", header=TRUE, check.names = FALSE)
+      cols_to_keep = as.data.frame(c("accession_id","seq_run"))
+      colnames(cols_to_keep) = "col_names"
+      metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
+    } else {
+      metadata_readin = ldply(list.files(pattern = "results_.*.tsv"), read.delim, header=TRUE, na.strings = c("","sample failed assembly"), check.names = FALSE)
+      cols_to_keep = as.data.frame(c("accession_id","seq_run"))
+      colnames(cols_to_keep) = "col_names"
+      metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
+    }
     
-    # rrerordering the columns to match the pattern in COMPLETED tab
+    # rerordering the columns to match the pattern in COMPLETED tab
     col_order <- c("cdphe_accesssion", "Virus.name", "accession_short", "title", "platform", "Collection.date", "Lineage", "Clade", "bioproject_accession", "biosample_accession", "accession", "V2", "Accession.ID")
     final_metadata <- ncbi_gisaid_genbank_merge_split[, col_order]
     final_metadata = final_metadata %>% add_column(submitter = opt$s, .before="cdphe_accesssion")

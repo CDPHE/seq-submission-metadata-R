@@ -345,13 +345,23 @@ back-up email: personal email</p>
 </div>
 <div id="download-completed-list" class="section level4">
 <h4>Download completed list</h4>
-<p>Some samples will be sequenced more than once on different sequencing platform (didn't fail, so they won't be in the rerun / bad noodle samples). To accoount for this users should also download a copy of the COMPLETED_submissions' tab in submissions_and_compiled_metadata</p>
+<p>Some samples will be sequenced more than once on different sequencing platform (didn't fail, so they won't be in the rerun / bad noodle samples). To account for this users should also download a copy of the COMPLETED_submissions' tab in submissions_and_compiled_metadata</p>
 <ol style="list-style-type: decimal">
 <li>Navigate to the <a href="https://docs.google.com/spreadsheets/d/1n9NzJNrqIHP9Lct_MZuSnOv3Qn1JCZsI/edit#gid=331506794">Google sheet</a> - if you can't reach this site then one of the current contributors with edit access to share the file with you.</li>
 <li>Click File -&gt; Download -&gt; tab-separated values (tsv, current sheet)</li>
 <li>Once downloaded run the following command to pseudo track versions - this adds the date and gets rid of spaces</li>
 </ol>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">mv</span> SUBMISSIONS_and_compiled_metadata.xlsx<span class="dt">\ </span>-<span class="dt">\ </span>COMPLETED_submissions_metadata.tsv completed_submissions_<span class="va">$(</span><span class="fu">date</span> +%d%b%Y<span class="va">)</span>.tsv</code></pre></div>
+</div>
+<div id="download-on-going-list" class="section level4">
+<h4>Download on-going list</h4>
+<p>Some samples will be rejected by NCBI Genbank, but will be submitted to GISAID, BioSample, and SRA, so we will also want to delete these out of your current submission as GISAID and NCBI (BioSample and SRA) will reject them. Users should download a copy of the 'ONGOING_submissions' tab in submissions_and_compiled_metadata</p>
+<ol style="list-style-type: decimal">
+<li>Navigate to the <a href="https://docs.google.com/spreadsheets/d/1n9NzJNrqIHP9Lct_MZuSnOv3Qn1JCZsI/edit#gid=80251444">Google sheet</a> - if you can't reach this site then one of the current contributors with edit access to share the file with you.</li>
+<li>Click File -&gt; Download -&gt; tab-separated values (tsv, current sheet)</li>
+<li>Once downloaded run the following command to pseudo track versions - this adds the date and gets rid of spaces</li>
+</ol>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="fu">mv</span> SUBMISSIONS_and_compiled_metadata.xlsx<span class="dt">\ </span>-<span class="dt">\ </span>ONGOING_submissions.tsv ongoing_submissions_<span class="va">$(</span><span class="fu">date</span> +%d%b%Y<span class="va">)</span>.tsv</code></pre></div>
 </div>
 <div id="gisaid-submission" class="section level4">
 <h4>GISAID submission</h4>
@@ -486,16 +496,16 @@ back-up email: personal email</p>
 </ul></li>
 <li>Under Sequences, select “release immediately following processing”</li>
 <li>Then upload the fasta file you generated (GenBank doesn't accept dashes and you need to add the NCBI project number so GenBank adds it to the right project - code has been developed to do this as well)</li>
+<li>A warning will pop up regarding N's and request to answer the question 'What do the internal NNN's represent?'. Fill in with 'A region of estimated length between the sequenced regions based on an alignment to similar sequences or genome&quot;' and click 'continue'</li>
+<li>Sequence processing: 'During processing, should NCBI remove sequences with errors and process the rest?&quot;. Depending on where we are against historic data either select 'yes' - Genbank will remove these from your submission and release the rest. The final Rscript will pull the metadata for the rejected samples to add to the 'ONGOING_submissions&quot; tab&quot;. If you select 'no' then you will go back and forth with GenBank with coverage information etc.</li>
 <li>Select 'None of these' for naming convention</li>
-<li>Select 'String of N's represents expected missing sequence against a reference'</li>
-<li>Depending on where we are against historic data either select 'yes' - Genbank will remove these from your submission and release the rest. The final Rscript will pull the metadata for the rejected samples to add to the 'ONGOING_submissions&quot; tab&quot;. If you select 'no' then you will go back and forth with GenBank with coverage information etc.</li>
 <li>Under the “Source Modifiers” tab you will upload your GenBank metadata tsv file</li>
 <li>Under References you will List: Laura Bankers, Molly C. Hetherington-Rauth, Diana Ir, Alexandria Rossheim, Michael A. Martin, Mandy Waters, Shannon R. Matzinger, Sarah Elizabeth Totten, Emily A. Travanty – If names are not correct, please change them in the gisaid template section of the submissions google sheet, so that they are up to date.
 <ul>
 <li>You have to manually put these in the first time and then you can select and apply this list for later submissions</li>
 </ul></li>
-<li>Then select “Unpublished” and then continue</li>
-<li>Under Review and Submit, make sure everything looks correct, them submit</li>
+<li>Then select “Unpublished” and then continue (can leave the rest of the boxes blank)</li>
+<li>Under Review and Submit, make sure everything looks correct, then submit</li>
 </ol>
 </div>
 </div>
@@ -621,10 +631,9 @@ back-up email: personal email</p>
 <h3>GISAID and NCBI Biosample</h3>
 <div id="useage" class="section level4">
 <h4>Useage</h4>
-<p>In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.*.csv in directory), concats the files, filters for samples &gt; 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample, a file that lists the current sample names and GISAID formatted names (users can then use awk command to rename samples), a file if any samples are missing the collection date, a file if the samples have a collection date prior to 2020, a file if those samples have already been uploaded (resequenced, but not because they failed), and a file if samples have been rerun because they failed or had contamination. The metadata file will be written out for samples with &gt;50 coverage and are the latest sequencing results. You can run this R script directly from the command line. You will need to supply 6 pieces of information as options / flags when running the script.</p>
+<p>In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.*.csv in directory), concats the files, filters for samples &gt; 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample, a file that lists the current sample names, GISAID formatted names (users can then use awk command to rename samples), and NCBI GenBank formatted names (with BIOPROJECT and Surveillance data if available), a file if any samples are missing the collection date, a file if the samples have a collection date prior to 2020, a file if those samples have already been uploaded (resequenced, but not because they failed), and a file if samples have been rerun because they failed or had contamination. The metadata file will be written out for samples with &gt;50 coverage, are the latest sequencing results, aren't a blank, and haven't been previously submitted (GISAID, BioSample, SRA, or GenBank). You can run this R script directly from the command line. You will need to supply 7 pieces of information as options / flags when running the script.</p>
 <p><strong>Script name:</strong> gisaid_ncbi_biosample_metadata_formatting.R<br />
-<strong>Input files:</strong> results_.*.tsv (pull all files with this regex), samples_already_submitted_*.tsv, samples_rerun_*.tsv<br />
-<strong>Options / flags:</strong> required to fill in all. The code will check spelling on the sequencing information and will error out if something is misspelled (options in #4 below)</p>
+<strong>Input files:</strong> results_*.tsv (pull all files with this regex), rerun_samples_*.tsv, completed_submissions_*.tsv, ongoing_submissions*.tsv <strong>Options / flags:</strong> required to fill in all. The code will check spelling on the sequencing information and will error out if something is misspelled (options in #4 below)</p>
 <ol style="list-style-type: decimal">
 <li>-m | --metadata = path/to/seq_metadata/files # This also sets the working directory to write files</li>
 <li>-f | --fasta_name = name_fasta_file_to_submit.fa # name of fasta file you will submit to GISAID</li>
@@ -632,68 +641,75 @@ back-up email: personal email</p>
 <li>-t | --seq_type = sequencing_type (Oxford Nanopore GridION, Illumina MiSeq, Illumina NextSeq)</li>
 <li>-r | --rerun_file = path/to/rerun_file.tsv # tsv downloaded from List_of_bad_runs_and_waste_water_samples</li>
 <li>-c | --completed_file = path/to/completed_file.tsv # tsv downloaded from submissions_and_compiled_metadata</li>
+<li>-o | --ongoing_file = path/to/ongoing_file.tsv # tsv downloaded from submissions_and_compiled_metadata</li>
 </ol>
 <p><strong>Example usage (short flags):</strong></p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># You need to type Rscript before your Rscript to run (Rscript gisaid_ncbi_biosample_metadata_formatting.R)</span>
-<span class="ex">Rscript</span> gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_metadata -f test_fasta.fa -s mandywaters -t <span class="st">&quot;Oxford Nanopore GridION&quot;</span> -r /home/mandy_waters/rerun_samples_11Sep2021.tsv -c /home/mandy_waters/samples_already_submitted_11Sep2021.tsv
+<span class="ex">Rscript</span> gisaid_ncbi_biosample_metadata_formatting.R -m /home/mandy_waters/test_metadata -f test_fasta.fa -s mandywaters -t <span class="st">&quot;Oxford Nanopore GridION&quot;</span> -r /home/mandy_waters/rerun_samples_11Sep2021.tsv -c /home/mandy_waters/samples_already_submitted_11Sep2021.tsv -o /home/mandy_waters/ongoing_submissions_11Sep2021.tsv
 
 <span class="co"># Strings with spaces need quotes</span></code></pre></div>
 <p><strong>Example usage (long flags):</strong></p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># You need to type Rscript before your Rscript to run (Rscript gisaid_ncbi_biosample_metadata_formatting.R)</span>
-<span class="ex">Rscript</span> gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type <span class="st">&quot;Oxford Nanopore GridION&quot;</span> --rerun_file /home/mandy_waters/rerun_samples_11Sep2021.tsv --completed_file /home/mandy_waters/samples_already_submitted_11Sep2021.tsv
+<span class="ex">Rscript</span> gisaid_ncbi_biosample_metadata_formatting.R --metadata /home/mandy_waters/test_metadata -f test_fasta.fa --submitter_name mandywaters --seq_type <span class="st">&quot;Oxford Nanopore GridION&quot;</span> --rerun_file /home/mandy_waters/rerun_samples_11Sep2021.tsv --completed_file /home/mandy_waters/samples_already_submitted_11Sep2021.tsv --ongoing_file /home/mandy_waters/ongoing_submissions_11Sep2021.tsv
 
 <span class="co"># Strings with spaces need quotes</span></code></pre></div>
 <p><strong>Output to terminal:</strong> Script prints the strings the user input for you to check. If you don't provide values for all flags then the script will error out and tell you which flag(s) are missing. The script will also error out if the sequence type name is misspelled. A warning and file will be printed / written that lists the accession name, coverage, and project number for samples that are missing a collection date or have a collection date prior to 2020. It will not error out, but will print this info and write it to a file for users to review. Another warning (will not error out) will be print if samples in your current batch have already been submitted or have been rerun. Samples will be dropped if they have already been submitted to GISAID or NCBI or are in the initial round of sequencing. It will print relevant information from the COMPLETED tab or ONGOING tab (if rejected by GenBank) in the metadata tracking excel sheet on Google Drive.</p>
 <p>You should see something like the following regardless of short or long flag names</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Rscript gisaid_ncbi_biosample_metadata_formatting.R <span class="op">--</span>metadata <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>test_metadata <span class="op">-</span>f test_fasta.fa <span class="op">--</span>submitter_name mandywaters <span class="op">--</span>seq_type <span class="st">&quot;Oxford Nanopore GridION&quot;</span> <span class="op">--</span>rerun_file <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>rerun_samples_11Sep2021.tsv <span class="op">--</span>completed_file <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>samples_already_submitted_11Sep2021.tsv
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">Rscript <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>scripts<span class="op">/</span>git_repo<span class="op">/</span>seq<span class="op">-</span>submission<span class="op">-</span>metadata<span class="op">-</span>R<span class="op">/</span>gisaid_ncbi_biosample_metadata_formatting.R <span class="op">-</span>m <span class="op">$</span>{cur_wd}<span class="op">/</span>metadata <span class="op">-</span>s mandy.waters <span class="op">-</span>f <span class="op">$</span>{batch}_gisaid_inital_upload.fa <span class="op">-</span>t <span class="st">&quot;Illumina NextSeq&quot;</span> <span class="op">-</span>r <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>Downloads<span class="op">/</span>rerun_samples_17Oct2021.tsv <span class="op">-</span>c <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>Downloads<span class="op">/</span>completed_submissions_17Oct2021.tsv <span class="op">-</span>o <span class="op">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>Downloads<span class="op">/</span>ongoing_submissions_17Oct2021.tsv
+
+INPUT FILES AND FLAGS<span class="op">:</span>
 
 metadata path<span class="op">:</span>
-<span class="er">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>test_metadata
+<span class="er">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>batch19_submit<span class="op">/</span>metadata
 
 name of fasta file to submit to GISAID<span class="op">:</span>
-test_fasta.fa
+batch19_gisaid_inital_upload.fa
 
 submitter name <span class="cf">for</span> GISAID<span class="op">:</span>
 mandy.waters
 
 sequencing type<span class="op">:</span>
-Oxford Nanopore GridION
+Illumina NextSeq
 
 name of rerun file<span class="op">:</span>
-<span class="er">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>rerun_samples_11Sep2021.tsv
+<span class="er">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>Downloads<span class="op">/</span>rerun_samples_17Oct2021.tsv
 
 name of completed submissions file<span class="op">:</span>
-<span class="er">/</span>Users<span class="op">/</span>water157<span class="op">/</span>Desktop<span class="op">/</span>completed_submissions_19Sep2021.tsv
+<span class="er">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>Downloads<span class="op">/</span>completed_submissions_17Oct2021.tsv
+
+name of ongoing submissions file<span class="op">:</span>
+<span class="er">/</span>home<span class="op">/</span>mandy_waters<span class="op">/</span>Downloads<span class="op">/</span>ongoing_submissions_17Oct2021.tsv
+
+SURVEILLANCE<span class="op">:</span>
+results.tsv files DO NOT have surveillance data
 
 
-WARNING<span class="op">:</span><span class="st"> </span>the samples below have a collection date before <span class="dv">2020</span><span class="op">:</span>
-<span class="st"> </span>accession_id percent_non_ambigous_bases collection_date       seq_run
-   <span class="dv">2101469473</span>                      <span class="fl">97.99</span>      <span class="dv">1983</span><span class="op">-</span><span class="dv">07</span><span class="op">-</span><span class="dv">14</span> COVMIN_0154rr
-
-
-
-WARNING<span class="op">:</span><span class="st"> </span>the samples below have been rerun<span class="op">:</span>
-<span class="st"> </span>accession_id              first_run        re_run
-   <span class="dv">2101450894</span> COVMIN_<span class="dv">0151</span><span class="op">/</span>COVMIN_<span class="dv">154</span> COVMIN_0154rr
-   <span class="dv">2101457196</span> COVMIN_<span class="dv">0151</span><span class="op">/</span>COVMIN_<span class="dv">154</span> COVMIN_0154rr
-   <span class="dv">2101633590</span>             NEXSEQ_<span class="dv">043</span>    NEXSEQ_<span class="dv">048</span>
-
-Checking and deleting metadata <span class="cf">for</span> samples that have been re<span class="op">-</span>run post projects <span class="cf">in</span> this batch
-
-WARNING<span class="op">:</span><span class="st"> </span>the samples below have already been submitted and are being deleted from the dataset<span class="op">:</span>
-<span class="st">    </span>submitter accession_id instrument_model    BioSample         SRA  GenBank
- mandy.waters   <span class="dv">2101448151</span>  OXFORD_NANOPORE SAMN21243277 SRR15899746 OK160504
- mandy.waters   <span class="dv">2101448165</span>  OXFORD_NANOPORE SAMN21243254 SRR15899803 OK160643
- mandy.waters   <span class="dv">2101450894</span>  OXFORD_NANOPORE SAMN21243280 SRR15899742 OK160177
- mandy.waters   <span class="dv">2101456893</span>  OXFORD_NANOPORE SAMN21243252 SRR15899805 OK160313
- mandy.waters   <span class="dv">2101456894</span>  OXFORD_NANOPORE SAMN21243251 SRR15899806 OK160071
- mandy.waters   <span class="dv">2101456915</span>  OXFORD_NANOPORE SAMN21243250 SRR15899808 OK160492
- mandy.waters   <span class="dv">2101457058</span>  OXFORD_NANOPORE SAMN21243192 SRR15900193 OK160627</code></pre></div>
+BAD NOODLES<span class="op">:</span>
+WARNING<span class="op">:</span><span class="st"> </span>the samples below have been submitted under multiple projects.  If you are processing the project <span class="cf">in</span> <span class="st">'first_run'</span> these samples will be removed from the dataset<span class="op">:</span>
+<span class="st"> </span>accession_id   first_run     re_run
+   <span class="dv">2101678415</span> COVMIN_<span class="dv">0195</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101648947</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101649102</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101649021</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101649115</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101648944</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101648933</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101648926</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101649116</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101649013</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101649118</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101649106</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101649220</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101649000</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101648994</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   <span class="dv">2101648987</span>  NEXSEQ_<span class="dv">046</span> NEXSEQ_<span class="dv">050</span>
+   
+FINISHED<span class="op">!</span><span class="st"> </span>Please check warnings and output files</code></pre></div>
 <p><strong>Output files:</strong></p>
 <ol style="list-style-type: decimal">
 <li>GISAID formatted file: gisaid_submission_date_metadata.csv (e.g. gisaid_submission_2021-07-03_metadata.csv)</li>
 <li>NCBI Biosample formatted file: ncbi_biosample_submission_date_metadata.tsv (e.g. ncbi_biosample_submission_2021-07-03_metadata.tsv)</li>
-<li>File to convert current fasta names to GISAID format (fasta_rename_accession_to_gisaid_id.csv)</li>
+<li>File to convert current fasta names to GISAID and GenBank format (fasta_rename_accession_to_gisaid_id.csv)</li>
 <li>CONDITIONAL: Missing collection date only writes this if samples are missing a collection date (e.g. samples_missing_collection_date_2021-07-03.tsv)</li>
 <li>CONDITIONAL: Collection date before 2020 only writes if samples collection date is before 2020 (e.g. samples_wrong_collection_date_2021-09-11.tsv)</li>
 <li>CONDITIONAL: samples that have been rerun are listed if the accessions in your batch match accessions listed in the rerun file (e.g. samples_rerun_2021-09-11.tsv)</li>
@@ -808,7 +824,8 @@ Oxford Nanopore GridION</code></pre></div>
 <h4>Useage</h4>
 <p>This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_*.tsv), and downloaded file from NCBI SRA (metadata-.*-processed-ok.tsv). You can run this R script directly from the command line. You will need to supply 2 pieces of information as options / flags when running the script.</p>
 <p><strong>Script name:</strong> ncbi_genbank_metadata_formatting.R<br />
-<strong>Input files in path:</strong> metadata-*-processed-ok.tsv (downloaded from NCBI submission page - click 'Download metadata file with SRA accessions' and moved to directory you put in the -p option) and gisaid_hcov-19_*.tsv (Download the seqeunce_metadata file from GISAID search and move to directory you put in the -p option) <strong>Options / flags:</strong> required to fill in all. The code will check spelling on the sequencing information and will error out if something is misspelled (options in #2 below)</p>
+<strong>Input files in path:</strong> metadata-*-processed-ok.tsv (downloaded from NCBI submission page - click 'Download metadata file with SRA accessions' and moved to directory you put in the -p option) and gisaid_hcov-19_*.tsv (Download the seqeunce_metadata file from GISAID search and move to directory you put in the -p option)<br />
+<strong>Options / flags:</strong> required to fill in all. The code will check spelling on the sequencing information and will error out if something is misspelled (options in #2 below)</p>
 <ol style="list-style-type: decimal">
 <li>-p | --path = path/to/seq_metadata/files # This also sets the working directory to write files</li>
 <li>-t | --seq_type = sequencing_type (Oxford Nanopore GridION, Illumina MiSeq, Illumina NextSeq)</li>
@@ -861,9 +878,9 @@ Oxford Nanopore GridION</code></pre></div>
 <h3>Combined data - submission completed tab</h3>
 <div id="useage-3" class="section level4">
 <h4>Useage</h4>
-<p>This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_*.tsv), genbank donwloaded file (seqids.txt) and downloaded file from NCBI SRA (metadata-.*-processed-ok.tsv). You can run this R script directly from the command line. You will need to supply 2 pieces of information as options / flags when running the script.</p>
+<p>This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_*.tsv), genbank donwloaded file (seqids.txt or accessions.txt) and downloaded file from NCBI SRA (metadata-.*-processed-ok.tsv), and results*.tsv to pull the seq_run information. This code will output a file with combined metadata that you will add to the 'COMPLETED_submssions' tab and conditionally a file if GenBank rejected some of your samples that you will add to the 'ONGOING_submissions' tab. You can run this R script directly from the command line. You will need to supply 2 pieces of information as options / flags when running the script.</p>
 <p><strong>Script name:</strong> submission_completed_metadata.R<br />
-<strong>Input files in path:</strong> metadata-*-processed-ok.tsv, seqids.txt (sometimes GenBank sends this file as accessions.txt - please change to seqids.txt), and gisaid_hcov-19_*.tsv<br />
+<strong>Input files in path:</strong> metadata-*-processed-ok.tsv, seqids.txt (sometimes GenBank sends this file as accessions.txt - code will take either file name), and gisaid_hcov-19_*.tsv<br />
 <strong>Options / flags:</strong> required to fill in all. The code will check if the user specificed both options or it will error out.</p>
 <ol style="list-style-type: decimal">
 <li>-p | --path = path/to/seq_metadata/files # This also sets the working directory to write files</li>

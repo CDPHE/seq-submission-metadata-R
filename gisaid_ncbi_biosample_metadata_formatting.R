@@ -258,5 +258,6 @@ ncbi_biosample_metadata[i,6] = metadata_50_cov[i,3] # collection_date
 
 # write biosample metadata file
 write.table(ncbi_biosample_metadata, file=paste("ncbi_biosample_submission", date, "metadata.tsv", sep="_"), row.names = FALSE, quote = FALSE, sep = '\t')
+write.table(metadata_50_cov, "filtered_results_subset_metadata.tsv", row.names = FALSE, quote = FALSE, sep = '\t')
 
 cat("\nFINISHED! Please check warnings and output files\n\n")

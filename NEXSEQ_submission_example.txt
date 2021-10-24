@@ -1,0 +1,161 @@
+# I make a new directory for each batch of submissions
+# Set unix/linux variable path for wd - so can reuse code across projects
+cur_wd="/home/mandy_waters/batch19_submit"
+batch="batch19"
+
+# cd into cur_wd and make directories
+mkdir download_fasta
+mkdir sequence_data
+mkdir metadata
+
+# In cur_wd make a file called project_list.txt that lists the projects to be submitted - with one project per line (I used vim to add, but users can use text editor if preferred)
+NEXSEQ_050
+NEXSEQ_051
+
+# Pull metadata from Google Drive - pull results*.tsv files for all projects into 'metadata' dir
+
+# Downloaded updated re-run sample file from Google Drive and rename
+mv List_of_bad_runs_and_waste_water_samples\ -\ re-run_samples.tsv rerun_samples_$(date +%d%b%Y).tsv
+
+# Download completed sample list from Google Drive and rename
+mv SUBMISSIONS_and_compiled_metadata.xlsx\ -\ COMPLETED_submissions_metadata.tsv completed_submissions_$(date +%d%b%Y).tsv
+
+# Download ongoing sample list from Google Drive and rename
+mv SUBMISSIONS_and_compiled_metadata.xlsx\ -\ ONGOING_submissions.tsv ongoing_submissions_$(date +%d%b%Y).tsv
+
+# generate gisaid and biosample metadata using gisaid_ncbi_biosample_metadata_formatting.R - write these files file the 'metadata' dir
+Rscript /home/mandy_waters/scripts/git_repo/seq-submission-metadata-R/gisaid_ncbi_biosample_metadata_formatting.R -m ${cur_wd}/metadata -s mandy.waters -f ${batch}_gisaid_inital_upload.fa -t "Illumina NextSeq" -r /home/mandy_waters/Downloads/rerun_samples_17Oct2021.tsv -c /home/mandy_waters/Downloads/completed_submissions_17Oct2021.tsv -o /home/mandy_waters/Downloads/ongoing_submissions_17Oct2021.tsv
+
+# Start pulling data for SRA in 'sequence_data' dir, so you can do this in parallel to next steps as the process to pull from the Google buckets can take a while to run
+# First pull the terra_data_table.tsv files
+while read name
+do
+gsutil cp gs://covid_terra/${name}/${name}_terra_data_table.tsv .
+done < ${cur_wd}/project_list.txt
+
+# Pull fastq files for SRA - in sequence_data dir
+# WARNING: this code is specific for NEXSEQ with two columns in the *terra_data_table.tsv
+while read name
+do
+while read acc path
+do
+gsutil -m cp $path .
+done < ${name}_terra_data_table.tsv
+done < ${cur_wd}/project_list.txt
+
+# some of my samples were resequenced, but I'm submitting the later run, so I can download into one directory
+
+# Submit biosample metadata, so you can work in parallel while samples are being approved 
+ncbi_biosample_submission_2021-10-17_metadata.tsv
+
+# Get list of files with >= 50% coverage in 'metadata' dir
+cut -f 1 ncbi_biosample_submission*_metadata.tsv > fasta_headers_50cov.txt
+
+# pull consensus fastas to 'download_fasta' dir
+while read name; do gsutil -m cp -r gs://covid_terra/${name}/terra_outputs/assemblies/*_consensus_renamed.fa .; done < ${cur_wd}/project_list.txt
+
+# Concat all downloaded fastas in 'download_fasta' dir
+cat *_consensus_renamed.fa > raw_concat.fa
+
+# Pull fastas with > 50% coverage
+seqtk subseq raw_concat.fa ${cur_wd}/metadata/fasta_headers_50cov.txt > subset_50cov.fa
+
+# Check length of subset_50cov.fa against the metadata.  If metadata data file is N+1 then you can delete the original *_consensus_renamed.fa
+# Delete the original & individ files
+rm *_consensus_renamed.fa
+
+# Run indel finder in 'download_fasta' dir
+conda activate indel_finder_env
+/home/mandy_waters/scripts/sars-cov-2_indel_finder/indel_finder.py -i ${cur_wd}/download_fasta/subset_50cov.fa -o ${cur_wd}/download_fasta --ref_path /home/mandy_waters/ref_seq/reference.fasta --prefix ${batch}
+conda deactivate
+
+# pull out and accession names that have insertions to check in 'download_fasta' dir
+grep '+' *indels.csv | cut -f 1 -d ',' > indel_finder_insertion_accession_names.txt
+grep '+' *indels.csv > coverage_info_insertions.csv
+sort -t , -k 3 coverage_info_insertions.csv
+
+# Rename seq names with GISAID format in 'download_fasta' dir
+awk -F, 'FNR==NR {f2[$1]=$2;next} $2 in f2 {$2=f2[$2]}1' ${cur_wd}/metadata/fasta_rename_accession_to_gisaid_id.csv FS='>' OFS='>' ${batch}.alignment.fasta > post_indel_concat_gisaid_format.fa
+
+# Removing dashes from the MSA from indel finder as VADR doesn't accept dashes
+sed '/^>/! s/-//g' post_indel_concat_gisaid_format.fa > post_indel_concat_gisaid_format_nodash.fa
+
+# Run VADR 1.3 on entire dataset
+docker run --rm=True -v $PWD:/data -u $(id -u):$(id -g) staphb/vadr:1.3 v-annotate.pl --split --cpu 8 --glsearch -s -r --nomisc --mkey sarscov2 --lowsim5seq 2 --lowsim3seq 2 --alt_fail lowscore,insertnn,deletinn post_indel_concat_gisaid_format_nodash.fa vadr_run
+
+# Can either check these or submit directly to GISAID and only go through ones that are rejected
+
+# upload to GISAID - will look at correct ones rejected 
+mv post_indel_concat_gisaid_format.fa ${batch}_gisaid_inital_upload.fa
+
+# Submit to GISAID
+# metadata: gisaid_submission_2021-10-17_metadata.csv
+# fasta: batch19_gisaid_inital_upload.fa
+
+# Download 'BioSampleObjects.txt' from email and move to 'metadata' dir
+
+# Create metadata for SRA
+Rscript /home/mandy_waters/scripts/git_repo/seq-submission-metadata-R/ncbi_sra_metadata_formatting.R -p ${cur_wd}/metadata -t "Illumina NextSeq"
+
+# get files to keep for upload to SRA in 'metadata' dir
+cut -f 13 ncbi_sra_submission_*metadata.tsv | sed 's/"//g' | grep -v '^file' > fastqs_to_keep.tsv
+
+# put the accession names for GISAID rejected samples into a file called gisaid_failed.txt with one accession per line
+
+# Pulling samples for IGV in gisaid failed
+sed 's/hCoV-19\/USA\/CO-CDPHE-//g' gisaid_failed.txt > accessions_failed_to_pull.csv
+sed -i -e 's/\/202.*//g' accessions_failed_to_pull.csv 
+while read name; do grep $name ${cur_wd}/metadata/results*.tsv >> failed_to_pull_bam_files.txt; done < accessions_failed_to_pull.csv
+# the columns to cut below may change depending on the results.tsv format
+cut -f 29-30 failed_to_pull_bam_files.txt > project_accessions_failed.txt
+
+# pull those files from Google bucket into 'download_fasta' dir and index them to look in IGV
+while read project acc; do gsutil cp gs://covid_terra/${project}/terra_outputs/alignments/${acc}*.bam .; done < project_accessions_failed.txt
+
+for i in *.bam; do samtools index $i; done
+
+# Use Aliview to see and correct sequences based on IGV
+# Read in: batch19_gisaid_inital_upload.fa
+# Write out: batch19_gisaid_reupload_all_seqs.fa
+
+# Add in accessions from the unreleased metadata file - I use VIM to write file: gisaid_accesions_failed.txt
+
+# Pulling those sequences for re-upload
+seqkit grep -n -f gisaid_accesions_failed.txt ${batch}_gisaid_reupload_all_seqs.fa -o ${batch}_gisaid_reupload_seq.fa
+
+# reupload to gisaid
+batch19_gisaid_reupload_seq.fa
+
+# Deleting files don't need to upload in 'sequence_data' dir
+for i in *fastq.gz; do
+    if ! grep -qxFe "$i" ${cur_wd}/metadata/fastqs_to_keep.tsv; then 
+    	echo "Deleting: $i"
+        rm "$i"
+    fi
+done
+
+# Upload to SRA
+# metadata: ncbi_sra_submission_2021-10-08_metadata.tsv
+/home/mandy_waters/aspera-connect/connect/bin/ascp -i /home/mandy_waters/Downloads/aspera.openssh -d ${cur_wd}/sequence_data subasp@upload.ncbi.nlm.nih.gov:uploads/mandy.waters_state.co.us_WRKu59ly
+
+# Download SRA: metadata-10505883-processed-ok.tsv
+# Download GISAID: gisaid_hcov-19_2021_10_11_15.tsv
+
+# Create NCBI metadata sheet
+Rscript /home/mandy_waters/scripts/git_repo/seq-submission-metadata-R/ncbi_genbank_metadata_formatting.R -p ${cur_wd}/metadata -t "Illumina NextSeq"
+
+# Getting fasta file ready for NCBI in 'download_fasta' dir
+sed '/^>/! s/-//g' ${batch}_gisaid_reupload_all_seqs.fa > ${batch}_ncbi_genbank_corrected.fasta
+awk '{if (substr($1, 1, 1)==">") print $0" [bioproject=PRJNA686984]"; else print $0}' ${batch}_ncbi_genbank_corrected.fasta > ${batch}_ncbi_genbank_corrected_proj.fasta
+
+# files uploaded to GenBank
+batch19_ncbi_genbank_corrected_proj.fasta
+ncbi_genbank_submission_2021-10-24_metadata.tsv
+
+# Download accessions.txt or seqids.txt from GenBank email and move to metadata dir
+
+# create final submission metadata
+Rscript /home/mandy_waters/scripts/git_repo/seq-submission-metadata-R/submission_completed_metadata.R -p ${cur_wd}/metadata -s mandy.waters
+
+# Copy information to the SUBMISSIONS excel sheet
+
