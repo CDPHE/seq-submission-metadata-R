@@ -50,11 +50,15 @@ sra = read.delim("BioSampleObjects.txt", header = TRUE)
 colnames(sra) = c("Accession","Sample_Name","SPUID","Organism","Tax_ID","Isolate","BioProject")
 sra = sra %>% dplyr::mutate(new_id = str_extract(Sample_Name, "[^-]+$"))
 
-# Pulling primer information
-filtered_results = read.delim("filtered_results_subset_metadata.tsv", header = TRUE)
-if("primer_set" %in% colnames(filtered_results)){
-  primer_name = unique(filtered_results$primer_set)
-}else{
+# pulling primer information
+if (file.exists("filtered_results_subset_metadata.tsv")) {
+  filtered_results = read.delim("filtered_results_subset_metadata.tsv", header = TRUE)
+    if("primer_set" %in% colnames(filtered_results)){
+      primer_name = unique(filtered_results$primer_set)
+    }else{
+     primer_name = "Artic V3"
+    }
+} else {
   primer_name = "Artic V3"
 }
 
