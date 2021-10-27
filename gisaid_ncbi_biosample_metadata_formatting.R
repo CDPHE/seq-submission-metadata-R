@@ -11,6 +11,7 @@ suppressPackageStartupMessages(require(optparse))
 suppressPackageStartupMessages(require(plyr))
 suppressPackageStartupMessages(require(dplyr))
 suppressPackageStartupMessages(require(stringr))
+suppressPackageStartupMessages(require(tibble))
 
 # set argument / options
 # manual: http://cran.r-project.org/web/packages/optparse/optparse.pdf
@@ -79,6 +80,13 @@ if("surveillance" %in% colnames(metadata_readin)){
 }
 
 colnames(cols_to_keep) = "col_names"
+
+# check primer information
+if("primer_set" %in% colnames(metadata_readin)){
+  primer_name <- unique(metadata_readin$primer_set)
+  cols_to_keep = cols_to_keep %>% add_row(col_names = "primer_set")
+  }
+
 metadata_subset_cols = metadata_readin[,colnames(metadata_readin) %in% cols_to_keep$col_names]
 patterns <- c("Blank", "NC", "NTC", "ExtractionPositive", "DiaplexPositive", "POS")
 metadata_no_blank_nc = filter(metadata_subset_cols, !grepl(paste(patterns, collapse="|"), accession_id))

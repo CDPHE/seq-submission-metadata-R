@@ -50,6 +50,14 @@ sra = read.delim("BioSampleObjects.txt", header = TRUE)
 colnames(sra) = c("Accession","Sample_Name","SPUID","Organism","Tax_ID","Isolate","BioProject")
 sra = sra %>% dplyr::mutate(new_id = str_extract(Sample_Name, "[^-]+$"))
 
+# Pulling primer information
+filtered_results = read.delim("filtered_results_subset_metadata.tsv", header = TRUE)
+if("primer_set" %in% colnames(filtered_results)){
+  primer_name = unique(filtered_results$primer_set)
+}else{
+  primer_name = "Artic V3"
+}
+
 # Creating an empty matrix to fill in with metadata 
 sra_metadata = as.data.frame(matrix("",ncol=14,nrow=nrow(sra)))
 colnames(sra_metadata) = c("bioproject_accession","biosample_accession","library_ID","title","library_strategy","library_source","library_selection","library_layout","platform","instrument_model","design_description","filetype","filename","filename2")
@@ -61,7 +69,7 @@ sra_metadata$title = "PCR tiled amplicon WGS of SARS-CoV-2"
 sra_metadata$library_strategy = "AMPLICON"
 sra_metadata$library_source = "VIRAL RNA"
 sra_metadata$library_selection = "PCR"
-sra_metadata$design_description = "Whole genome sequencing of SARS-CoV-2 using the Artic protocol V3 and Illumina MiSeq"
+sra_metadata$design_description = paste("Whole genome sequencing of SARS-CoV-2 using the", primer_name, "protocol", sep = " ")
 sra_metadata$filetype = "fastq"
 
 primer = 1
