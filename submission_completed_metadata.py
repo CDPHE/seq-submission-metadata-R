@@ -8,6 +8,7 @@ import os
 from datetime import date
 # import subprocess
 import glob
+import shutil
 
 
 
@@ -86,7 +87,7 @@ if __name__ == '__main__':
     ### from genbank    
     ###### rename file genbank sends if not seqids.txt
     if os.path.exists('accessions.txt'):
-        os.move('accessions.txt', 'seqids.txt')
+        shutil.move('accessions.txt', 'seqids.txt')
     else:
         print('  GenBank file has expected file name\n')
         
@@ -147,42 +148,43 @@ if __name__ == '__main__':
     
     # filte for ongoing tab
     ongoing = all_merged[all_merged.GenBank.isna()]
-    ongoing = ongoing.reset_index(drop = True)
-    
-    ### add columns
-    ongoing['submitter'] = submitter_name
-    ongoing['Isolation Source'] = 'patient isolate'
-    ongoing['Submission Date (genbank - final)'] = ''
-    
-    for row in range(ongoing.shape[0]):
-        accession_id = ongoing.accession_id[row]
-        isolate_name = 'CO-CDPHE-%s' % accession_id
-        ongoing.at[row, 'isolate/sample_name'] = isolate_name
+    if ongoing.shape[0] > 0:
+        ongoing = ongoing.reset_index(drop = True)
 
-    
-    rename_col = { 'virus_name':'Virus name', 
-                  'title' :'sample_title', 
-                  'platform':'instrument_model', 
-                  'bioproject_accession' :'BioProject', 
-                  'biosample_accession': 'BioSample', 
-                  'accession' :'SRA', 
-                  'Accession ID' : 'GISAID',
-                 'seq_run' : 'Seq_run'}
-    
-    ongoing_tab_columns = ['submitter', 'accession_id', 'Seq_run', 'Virus name',
-       'isolate/sample_name', 'sample_title', 'instrument_model',
-       'Isolation Source', 'Collection date', 'Lineage', 'Clade', 'GISAID',
-       'BioProject', 'BioSample', 'SRA', 'GenBank',
-       'Submission Date (genbank - final)']
-    
-    ongoing = ongoing.rename(columns = rename_col)
-    ongoing = ongoing[ongoing_tab_columns]
-    ongoing = ongoing.sort_values(by = 'Seq_run')
-    
-    outfile = 'ONGOING_gnebank_mising_%s_metadata.tsv' % today_date
-    ongoing.to_csv(outfile, sep = '\t', index = False)
+        ### add columns
+        ongoing['submitter'] = submitter_name
+        ongoing['Isolation Source'] = 'patient isolate'
+        ongoing['Submission Date (genbank - final)'] = ''
+
+        for row in range(ongoing.shape[0]):
+            accession_id = ongoing.accession_id[row]
+            isolate_name = 'CO-CDPHE-%s' % accession_id
+            ongoing.at[row, 'isolate/sample_name'] = isolate_name
+
+
+        rename_col = { 'virus_name':'Virus name', 
+                      'title' :'sample_title', 
+                      'platform':'instrument_model', 
+                      'bioproject_accession' :'BioProject', 
+                      'biosample_accession': 'BioSample', 
+                      'accession' :'SRA', 
+                      'Accession ID' : 'GISAID',
+                     'seq_run' : 'seq_run'}
+
+        ongoing_tab_columns = ['submitter', 'accession_id', 'seq_run', 'Virus name',
+           'isolate/sample_name', 'sample_title', 'instrument_model',
+           'Isolation Source', 'Collection date', 'Lineage', 'Clade', 'GISAID',
+           'BioProject', 'BioSample', 'SRA', 'GenBank',
+           'Submission Date (genbank - final)']
+
+        ongoing = ongoing.rename(columns = rename_col)
+        ongoing = ongoing[ongoing_tab_columns]
+        ongoing = ongoing.sort_values(by = 'seq_run')
+
+        outfile = 'ONGOING_genbank_missing_%s_metadata.tsv' % today_date
+        ongoing.to_csv(outfile, sep = '\t', index = False)
         
-    
+        print('%d sequences rejected by Genbank. Check %s file for details.' %(ongoing.shape[0], outfile))
         
         
     
