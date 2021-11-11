@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     
     # print input variables:
-    print('  INPUT FILES AND FLAGS:')
+    print('  *** INPUT FILES AND FLAGS:')
     print('')
     print('  metadata path: \n    %s\n' % metadata_dir)
     print('  name of fasta file to submit to GISAID: \n    %s\n' % gisaid_fasta_name)
@@ -171,12 +171,12 @@ if __name__ == '__main__':
     crit1 = metadata_readin.coverage >= coverage_min
     crit2 = metadata_readin.coverage < coverage_max
     crit3 = ~metadata_readin.accession_id.str.contains('Blank|NC|NTC|ExtractionPositive|POS')   
-    
-    if coverage_max != 100:
+
+    if coverage_max == 100:
         metadata_readin = metadata_readin[crit1 & crit3]
     else:
         metadata_readin = metadata_readin[crit1 & crit2 & crit3]
-    
+
     col_order = ['accession_id', 'coverage', 'collection_date', 'fasta_header', 'seq_run', 'surveillance', 'primer_set']
     metadata_readin = metadata_readin[col_order]
     metadata_readin = metadata_readin.reset_index(drop = True)
@@ -318,7 +318,10 @@ if __name__ == '__main__':
     drop_crit= ~ metadata_readin.accession_id.isin(to_drop_accessions)
     metadata_readin = metadata_readin[drop_crit]
     
-    
+    ###################
+    # to screen the number of rows of data
+    print('  *** DONE FILTERING METADATA')
+    print('    there are %d unique accessions to submit in this batch\n' % len(metadata_readin.accession_id.unique().tolist()))
     
     ####################
     # save the filtered metadata_readin df
