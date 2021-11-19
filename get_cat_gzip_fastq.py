@@ -5,12 +5,11 @@ import subprocess
 import shlex
 import pandas as pd
 
-
 def download_fastq(run, line_dat):
     # get extension	
     # this is sloppy. can't think of a better way right now. 
-    
     print(line_dat.iloc[0])
+    # check if file exists
     ps = subprocess.Popen(shlex.split(f'gsutil -m ls {line_dat["fastq_dir"]}'), 
         stdout=subprocess.PIPE)
     ps_head = subprocess.check_output(shlex.split('head -n 1'), stdin=ps.stdout)
@@ -32,8 +31,12 @@ def download_fastq(run, line_dat):
 
 
 if __name__ == "__main__":
-    for run in sys.argv[1:]:
+    for run in sys.argv[2:]:
         print(run)
+        # read in filtered results file
+        include = \
+            set(pd.read_csv(sys.argv[1], sep='\t').iloc[:,0].astype(str))
+
         # makes fastq directory if it doesn't exist
         subprocess.run(shlex.split(f'mkdir -p {run}_fastq'))
         
@@ -42,7 +45,8 @@ if __name__ == "__main__":
         
         # read in terra data table
         dat = pd.read_csv(f'{run}_terra_data_table.tsv', sep='\t')
+        # subset 
+        dat = dat[dat.iloc[:,0].isin(include)]
         dat.apply(lambda k: download_fastq(run, k), axis=1)
-
 
 
