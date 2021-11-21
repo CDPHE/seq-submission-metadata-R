@@ -139,15 +139,32 @@ if __name__ == '__main__':
         # if COVIDSEQ 3 primers used update to Artic V3 primers
         for row in range(metadata_readin.shape[0]):
             primer_set = metadata_readin.primer_set[row]
-            if primer_set == 'COVIDSEQ V3':
+            if primer_set == 'COVIDSEQ V3' or primer_set == 'COVIDSeqV3' or primer_set == 'COVIDSeq V3':
                 metadata_readin.at[row, 'primer_set'] = 'Artic V3'
-            
+                
+        # if missing fill in with 'Artic V3'
+        crit = metadata_readin.primer_set.isna()
+        missing_primers = metadata_readin[crit]
+        if missing_primers.shape[0] > 0 :
+            seq_runs_with_missing_primers = missing_primers.seq_run.unique().tolist()
+            metadata_readin.primer_set = metadata_readin.primer_set.fillna('Artic V3')
+        else:
+            seq_runs_with_missing_primers = []
+        
+        ### now continue onward
         primers_used_dict = dict(zip(metadata_readin.seq_run, metadata_readin.primer_set))    
         print('  *** PRIMER_SET:')
         print('     results.tsv file include primer information')
         if 'COVIDSEQ V3' in primers_used:
             print('     COVIDSEQ V3 primers will be renamed to Artic V3')
-        print('     primers used include:')
+
+        if len(seq_runs_with_missing_primers) > 0:
+            print('     The following seq runs did not include primer info will default to "Artic V3"')
+            for seq_run in seq_runs_with_missing_primers:
+                print('          %s' % seq_run)
+                
+        print('')
+        print('     primers used include:')        
         for seq_run in primers_used_dict:
             print('          %s : %s' % (seq_run, primers_used_dict[seq_run]))
         print('\n')
