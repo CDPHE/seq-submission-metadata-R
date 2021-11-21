@@ -202,6 +202,48 @@ if __name__ == '__main__':
 #     print(metadata_readin.head())
     
     
+    ###############################  
+    # rerun samples
+    ### read in rerun samples
+    rerun_df = pd.read_csv(rerun_file_path, sep = '\t', dtype = {'accession_id' : object})
+    
+    ##### fix first run names....
+    for row in range(rerun_df.shape[0]):
+        first_run = rerun_df.first_run[row]
+        if re.search('\(', first_run):
+            rerun_df.at[row, 'first_run'] = first_run.split('(')[0]
+
+    rerun_accessions = rerun_df.accession_id.unique().tolist()
+    metadata_readin_accessions = metadata_readin.accession_id.unique().tolist()
+    metadata_readin_seq_runs = metadata_readin.seq_run.unique().tolist()
+    
+    
+    
+    #### print to screen the list of rerun samples and also save to outfile
+    crit = rerun_df.accession_id.isin(metadata_readin_accessions)
+    temp =rerun_df[crit]
+    
+    if temp.shape[0] > 0:
+        outfile = os.path.join(metadata_dir, 'samples_rerun_%s.tsv' % today_date)
+        temp.to_csv(outfile, sep = '\t', index= False)
+        
+        print('  *** BAD NOODLES:')
+        print('  WARNING: The samples below have been submitted under multiple projects.')
+        print('           If you are processing the project in "first_run" these samples will be removed from the dataset:\n')
+        print(temp[['accession_id', 'first_run', 're_run']])
+        print('\n')
+    
+    #### drop the accessions if the re-run seq_run doesn't match the seq run in the metadata_readin
+    ####### get list of accessions where the re-run seq_run != one of the seq_Runs in submission list
+    crit2 = ~temp.re_run.isin(metadata_readin_seq_runs)
+    temp = temp[crit2]
+    to_drop_accessions = temp.accession_id.unique().tolist()
+    
+    drop_crit= ~ metadata_readin.accession_id.isin(to_drop_accessions)
+    metadata_readin = metadata_readin[drop_crit]
+    metadata_readin = metadata_readin.reset_index(drop = True)
+    
+    
     #######################
     # check for duplicate accession ids
     dups = []
@@ -294,46 +336,7 @@ if __name__ == '__main__':
 
     
 
-#     print(metadata_readin.head())
-      ###############################  
-    # rerun samples
-    ### read in rerun samples
-    rerun_df = pd.read_csv(rerun_file_path, sep = '\t', dtype = {'accession_id' : object})
-    
-    ##### fix first run names....
-    for row in range(rerun_df.shape[0]):
-        first_run = rerun_df.first_run[row]
-        if re.search('\(', first_run):
-            rerun_df.at[row, 'first_run'] = first_run.split('(')[0]
 
-    rerun_accessions = rerun_df.accession_id.unique().tolist()
-    metadata_readin_accessions = metadata_readin.accession_id.unique().tolist()
-    metadata_readin_seq_runs = metadata_readin.seq_run.unique().tolist()
-    
-    
-    
-    #### print to screen the list of rerun samples and also save to outfile
-    crit = rerun_df.accession_id.isin(metadata_readin_accessions)
-    temp =rerun_df[crit]
-    
-    if temp.shape[0] > 0:
-        outfile = os.path.join(metadata_dir, 'samples_rerun_%s.tsv' % today_date)
-        temp.to_csv(outfile, sep = '\t', index= False)
-        
-        print('  *** BAD NOODLES:')
-        print('  WARNING: The samples below have been submitted under multiple projects.')
-        print('           If you are processing the project in "first_run" these samples will be removed from the dataset:\n')
-        print(temp[['accession_id', 'first_run', 're_run']])
-        print('\n')
-    
-    #### drop the accessions if the re-run seq_run doesn't match the seq run in the metadata_readin
-    ####### get list of accessions where the re-run seq_run != one of the seq_Runs in submission list
-    crit2 = ~temp.re_run.isin(metadata_readin_seq_runs)
-    temp = temp[crit2]
-    to_drop_accessions = temp.accession_id.unique().tolist()
-    
-    drop_crit= ~ metadata_readin.accession_id.isin(to_drop_accessions)
-    metadata_readin = metadata_readin[drop_crit]
     
     ###################
     # to screen the number of rows of data
