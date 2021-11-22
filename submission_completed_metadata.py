@@ -64,6 +64,8 @@ if __name__ == '__main__':
     for row in range(ncbi_in.shape[0]):
         filename = ncbi_in.filename[row]
         accession_id = filename.split('.')[0]
+        if re.search('_', accession_id):
+            accession_id = filename.split('_')[0]
         if re.search('CO-CDPHE-', accession_id):
             accession_id = accession_id.split('CO-CDPHE-')[1]
         ncbi_in.at[row, 'accession_id'] = accession_id
