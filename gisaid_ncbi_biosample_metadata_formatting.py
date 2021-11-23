@@ -391,7 +391,7 @@ if __name__ == '__main__':
     gisaid_df['covv_subm_lab'] = 'Colorado Department of Public Health and Environment'
     gisaid_df['covv_subm_lab_addr'] = '8100 E. Lowry Blvd. Denver CO, 80230'
     gisaid_df['covv_subm_sample_id'] = ''
-    gisaid_df['covv_authors'] = 'Laura Bankers, Molly C. Hetherington-Rauth, Diana Ir, Alexandria Rossheim, Michael Martin, Mandy Waters, Shannon R. Matzinger, Sarah Elizabeth Totten, Emily A. Travanty'
+    gisaid_df['covv_authors'] = 'Laura Bankers, Molly C. Hetherington-Rauth, Diana Ir, Alexandria Rossheim, Michael Martin, Mandy Waters, Arianna Smith, Shannon R. Matzinger, Sarah Elizabeth Totten, Emily A. Travanty'
     gisaid_df['covv_comment'] = ''
     gisaid_df['comment_type'] = ''
     gisaid_df['covv_add_host_info'] = ''
