@@ -175,8 +175,8 @@ if __name__ == '__main__':
 
         ongoing_tab_columns = ['submitter', 'accession_id', 'seq_run', 'Virus name',
            'isolate/sample_name', 'sample_title', 'instrument_model',
-           'Isolation Source', 'Collection date', 'Lineage', 'Clade', 'GISAID',
-           'BioProject', 'BioSample', 'SRA', 'GenBank',
+           'Isolation Source', 'Collection date', 'Lineage', 'Clade',
+           'BioProject', 'BioSample', 'SRA', 'GenBank', 'GISAID',
            'Submission Date (genbank - final)']
 
         ongoing = ongoing.rename(columns = rename_col)
