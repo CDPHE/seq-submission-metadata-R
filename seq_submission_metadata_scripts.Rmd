@@ -3,6 +3,8 @@ title: "REAME: SARS-CoV-2 sequence submission process"
 author:
 - Mandy Waters
 - CDPHE Contractor
+upadated by:
+- Molly Hetherington-Rauth, Dec 6, 2021
 date: "July 2021"
 output:
   html_document:
@@ -97,7 +99,7 @@ Special call out to Laura Bankers for most of the content below
 
 **Samples that have been re-run / resequenced:** Some samples needed to be resequenced. A list of these samples can be found [here](https://docs.google.com/spreadsheets/d/1PtaHHa8iuqM6fNGTSkHiinxc5poQnVt1Ti67yLSVQ6c/edit#gid=471638297).  This file will need to be downloaded before each submission so samples are not submitted more than once and the resequenced samples are being uploaded.
 
-**Extra information:** 
+**Extra information:**
 
 1. early COVMIN runs were re-analyzed due to workflow updates. The final results for these runs are in “terra_outputs_rr” (be sure to use files in the _rr directories in these cases). The underlying directory structure in the _rr directory is the same as the other output directories  
 2. NCBI BioSample only lets you submit up to 1000 samples at a time – So I tend to just maintain batch numbers of up to 1000 sample throughout the entire process   
@@ -109,7 +111,7 @@ Laura has created an [excel document](https://docs.google.com/spreadsheets/d/1n9
 Sumbitters can add their initals next to the projects they are working on in the in the 'Notes' column in 'NOT_submitted' tab to ensure mulitple submitters aren't working on the same projects.  While we are catching up we are submitting samples  we are having GenBank reject samples when they find errors.  Add these samples to the 'ONGOING_submissions' tab and we will go back when we are more caught up. Once the samples are submitted to all public databases then all concatted metadata are put into the 'COMPLETED_submissions' tab.
 
 ####Download re-run samples
-The sequencing center adds information about which samples were rerun on the CDPHE Google Drive.  You can download the re-run tab from 'List_of_bad_runs_and_waste_water_samples' google sheet using the instructions below.
+The sequencing team adds information about which samples were rerun on the CDPHE Google Drive.  You can download the re-run tab from 'List_of_bad_runs_and_waste_water_samples' google sheet using the instructions below.
 
 1. Navigate to the [Google Sheet](https://docs.google.com/spreadsheets/d/1PtaHHa8iuqM6fNGTSkHiinxc5poQnVt1Ti67yLSVQ6c/edit#gid=471638297) - if you can't reach this site then one of the current contributors with edit access to share the file with you.
 2. Click File -> Download -> tab-separated values (tsv, current sheet)
@@ -120,7 +122,7 @@ mv List_of_bad_runs_and_waste_water_samples\ -\ re-run_samples.tsv rerun_samples
 ```
 
 ####Download completed list
-Some samples will be sequenced more than once on different sequencing platform (didn't fail, so they won't be in the rerun / bad noodle samples).  To account for this users should also download a copy of the COMPLETED_submissions' tab in submissions_and_compiled_metadata 
+Some samples will be sequenced more than once on different sequencing platform (didn't fail, so they won't be in the rerun / bad noodle samples).  To account for this users should also download a copy of the COMPLETED_submissions' tab in submissions_and_compiled_metadata
 
 1. Navigate to the [Google sheet](https://docs.google.com/spreadsheets/d/1n9NzJNrqIHP9Lct_MZuSnOv3Qn1JCZsI/edit#gid=331506794) - if you can't reach this site then one of the current contributors with edit access to share the file with you.
 2. Click File -> Download -> tab-separated values (tsv, current sheet)
@@ -131,7 +133,7 @@ mv SUBMISSIONS_and_compiled_metadata.xlsx\ -\ COMPLETED_submissions_metadata.tsv
 ```
 
 ####Download on-going list
-Some samples will be rejected by NCBI Genbank, but will be submitted to GISAID, BioSample, and SRA, so we will also want to delete these out of your current submission as GISAID and NCBI (BioSample and SRA) will reject them.  Users should download a copy of the 'ONGOING_submissions' tab in submissions_and_compiled_metadata 
+Some samples will be rejected by NCBI Genbank, but will be submitted to GISAID, BioSample, and SRA, so we will also want to delete these out of your current submission as GISAID and NCBI (BioSample and SRA) will reject them.  Users should download a copy of the 'ONGOING_submissions' tab in submissions_and_compiled_metadata
 
 1. Navigate to the [Google sheet](https://docs.google.com/spreadsheets/d/1n9NzJNrqIHP9Lct_MZuSnOv3Qn1JCZsI/edit#gid=80251444) - if you can't reach this site then one of the current contributors with edit access to share the file with you.
 2. Click File -> Download -> tab-separated values (tsv, current sheet)
@@ -145,7 +147,7 @@ mv SUBMISSIONS_and_compiled_metadata.xlsx\ -\ ONGOING_submissions.tsv ongoing_su
 
 Submit your sequence to GISAID
 
-1. The metadata file needed will be written by the R script gisaid_ncbi_biosample_metadata_formatting.R with all columns headers with missing data for any fields that we don’t fill out  
+1. The metadata file needed will be written by the pytho script gisaid_metadata_formatting.R with all columns headers with missing data for any fields that we don’t fill out  
 2. Login to your [GISAID account](https://www.gisaid.org/), then go to the EpiCoV tab, then select > batch upload (you can ignore the CLI notification window that will pop up because the standard submission method is super easy. Upload your metadata csv, upload your fasta, and select “check and submit"    
 3. You will receive an email once your sequences have been processed with those that have been released and another if GISAID finds any errors. They will either ask you to email them back with coverage information or respond by accessing the 'unreleased' tab on your GISAID account (more recently the latter is more common). If the frameshift mutations don't match something that was already flagged by VADR, then check the bam file in IGV. Write out a new fasta file with the consensus sequences that were rejected (corrected and unchanged sequences if coverage supports the nucleotide seq) and replace this new fasta in the upload page on GISAID.  
 
@@ -154,24 +156,30 @@ Submit your sequence to GISAID
 ####BioSample submission info
 
 Submit to NCBI BioSample
+note: we have updated our workflow a bit here. now we will include the gisaid accession ids in the biosample metadata file so we will need to wait to get the gisaid accession ids before continuing on to any of the ncbi submissions.
 
-1. Get metadata file made from gisaid_ncbi_biosample_metadata_formatting.R. Make sure you use BioProject PRJNA686984.  
-2. Login to NCBI and go the submission portal: https://submit.ncbi.nlm.nih.gov/subs/
-3. Go to My Submissions  > BioSample > New Submission  
-4. Fill out the submitter info with your state email as the primary email and fill out institutional information as follows:
+1. In your gisaid account, go to the search tab and download the "Sequencing technology metadata" file. Move this file into the metadata directory.
+2. Create the ncbi biosample metdata file by using the ncbi_biosample_metadata_formatting.py script. You will only need to specify the path to the metadata directory.
+
+```ncbi_biosample_metadata_formatting.py -m {metdata_dir_path}
+ ```
+3. Check for warning. The script will notify you if any sample is missing a gisaid accession id. If it a sample is missing a gisaid accession id, your gisaid submisson may not be completed processing.   
+4. Login to NCBI and go the submission portal: https://submit.ncbi.nlm.nih.gov/subs/
+5. Go to My Submissions  > BioSample > New Submission  
+6. Make sure you use BioProject PRJNA686984.
+7. Fill out the submitter info with your state email as the primary email and fill out institutional information as follows and be sure to use the cdphe submission group:
 
 ```{r, "bioosample_flowchart", fig.width=8, fig.height=5, fig.align = "center", echo=FALSE, warning=FALSE}
 img <- readPNG("/Users/water157/Desktop/OneDrive - Pepsico/covid/biosample_info.png")
 grid.raster(img)
 ```
-
-6. Under General Information select:  
+8. Under General Information select:  
     + “Release immediately following processing”  
     + “BatchMultiple BioSamples” **Note that you are only allowed to submit up to 1000 Biosamples at a time  
-7. Under Sample Template select “SARS-CoV-2: clinical or host-associated”  
-8. Under Attributes you will upload your metadata tsv file  
-9. Under Review and Submit, double check that everything looks correct and then hit submit  
-    
+9. Under Sample Template select “SARS-CoV-2: clinical or host-associated”  
+10. Under Attributes you will upload your metadata tsv file  
+11. Under Review and Submit, double check that everything looks correct and then hit submit  
+
 Once your BioSample submission has been fully processed, you can proceed to NCBI SRA submission (you will need for BioSample SAMNNNNNNNN accession ids for SRA) – this generally takes less than an hour.
 
 ####SRA submission info
@@ -187,7 +195,7 @@ Code to pull reads for COVSEQ
 Add code after it is tested
 ```
 
- Code to pull reads for NEXSEQ 
+ Code to pull reads for NEXSEQ
 ```{bash, "download_illumina_next", echo=TRUE, eval=FALSE}
 # Pull the terra data tables for the sequencing runs
 while read name
@@ -207,38 +215,10 @@ done < ${cur_wd}/project_list.txt
 ```
 
     There will be a single file for Illumina NextSeq runs (which are single-end). These are located in gs:// covid_terra/NEXSEQ_NNN/fastq_files/ are all named as “accesionid.fastq.gz”
-    
-Nanopore runs have a large number of fastq files associated with each sample. They are organized into barcode directories – one barcode directory per sample. E.g.: gs:// covid_terra/COVMIN_0009/fastq_pass/barcode02 contains all the fastq files for the sample that was barcoded with barcode02. 
 
-Use the script get_cat_gzip_fastq.sh on [Github](https://github.com/CDPHE/seq-submission-metadata-R) to compile all the barcodes into a single sample. This will also gzip the files so the names match the output from the R scripts  
+Nanopore runs have a large number of fastq files associated with each sample. They are organized into barcode directories – one barcode directory per sample. E.g.: gs:// covid_terra/COVMIN_0009/fastq_pass/barcode02 contains all the fastq files for the sample that was barcoded with barcode02.
 
-```{bash, "download_nanopore", echo=TRUE, eval=FALSE}
-# pull fastq files for Nanopore data - need to be concatted by barcode.  Script also checks if the files are gzipped and compresses them if they are not
-for run in "$@"; do
-	echo $run
-	mkdir -p ${run}_fastq
-	cd ${run}_fastq
-	# downloands run data
-	gsutil -m cp gs://covid_terra/${run}/${run}_terra_data_table.tsv .
-
-	while read p; do
-	  echo $p
-	  accession=$(echo $p | awk '{print $1}')
-	  echo $accession
-	  barcode=$(echo $p | awk '{print $2}')
-	  path=$(echo $p | awk '{print $3}')
-	  echo $barcode
-	 	 if gsutil ls ${path}/*.fastq.gz 1> /dev/null 2>&1; then
-	 	 	gsutil cat ${path}/*.fastq.gz > CO-CDPHE-${accession}.fastq.gz
-	 	 else
-	 	 	gsutil cat ${path}/*.fastq > CO-CDPHE-${accession}.fastq
-	 	 	gzip CO-CDPHE-${accession}.fastq
-	 	 fi
-	done < <(tail -n +3 ${run}_terra_data_table.tsv)
-
-done
-```
-
+Use the script get_cat_gzip_fastq.py on [Github](https://github.com/CDPHE/seq-submission-metadata-R) to compile all the barcodes into a single sample. This will also gzip the files so the names match the output from the R/python scripts  
 2. Prepare your metadata file using the R script: ncbi_sra_metadata_formatting.R
 3. Go to your NCBI Submissions Portal > Sequence Read Archive > New Submission
 4. Submitter info is filled out the same way as for the BioSample submission
@@ -252,8 +232,8 @@ grid.raster(img)
 6. Under the SRA Metadata tab, upload your metadata tsv fromncbi_sra_metadata_formatting.R
 7. Under Files, select “FTP or Aspera Command Line file preload”
     + Read the Aspera Commandline instructions tab, and download the key file to your VM
-    + Go back to your VM commandline window, cd into the directory containing your fastq files and run: 
-    
+    + Go back to your VM commandline window, cd into the directory containing your fastq files and run:
+
 ```{bash, "sra_upload", echo=TRUE, eval=FALSE}
 # SRA will provide the rest of subasp@upload.ncbi.nlm.nih.gov:upload on your upload page
 /path/to/aspera-connect/connect/bin/ascp -i /path/to/aspera.openssh -d sequence_dir subasp@upload.ncbi.nlm.nih.gov:uploads/...
@@ -268,7 +248,8 @@ grid.raster(img)
 2. Under Submission Type > What do your sequences contain? Selection “SARS-CoV2, Influenza…” then for Which virus? Also select “SARS-CoV-2.” You can leave the submission title blank, but I fill in with the batch number in case I need to quickly reference which set of samples were included  
 3. Submitter Information is the same as for other NCBI submissions
 4. Under sequencing technology select either “Illumina” for an batch of MiSeq or NextSeq samples, or “Other” if the batch is of assemblies from nanopore data (then put Oxford Nanopore in the field that appears). Then select assembled sequences
-    + For Assembly information for Illumina data put minimap2 v.2.1, and iVar v.1.3.1
+    + For Assembly inforamtion for Illumina MiSeq (COVSEQ runs prior to COVSEQ_0063) use minimap2 v.2.1, and iVar v.1.3.1
+    + For Assembly information for Illumina data (all NEXSEQ, all NOVASEQ and COVSEQ runs begining with COVSEQ_0063) put BWA v.0.7.17-r1188, and iVar v.1.3.1
     + For Assembly information Nanopore assemblies put Arctic MinION JAN-2020
 5. Under Sequences, select “release immediately following processing”
 6. Then upload the fasta file you generated (GenBank doesn't accept dashes and you need to add the NCBI project number so GenBank adds it to the right project - code has been developed to do this as well)
@@ -276,8 +257,8 @@ grid.raster(img)
 8. Sequence processing: 'During processing, should NCBI remove sequences with errors and process the rest?". Depending on where we are against historic data either select 'yes' - Genbank will remove these from your submission and release the rest.  The final Rscript will pull the metadata for the rejected samples to add to the 'ONGOING_submissions" tab".  If you select 'no' then you will go back and forth with GenBank with coverage information etc.
 9. Select 'None of these' for naming convention
 10. Under the “Source Modifiers” tab you will upload your GenBank metadata tsv file
-11. Under References you will List: Laura Bankers, Molly C. Hetherington-Rauth, Diana Ir, Alexandria Rossheim, Michael A. Martin, Mandy Waters, Shannon R. Matzinger, Sarah Elizabeth Totten, Emily A. Travanty – If names are not correct, please change them in the gisaid template section of the submissions google sheet, so that they are up to date. 
-    + You have to manually put these in the first time and then you can select and apply this list for later submissions 
+11. Under References you will List: Laura Bankers, Molly C. Hetherington-Rauth, Diana Ir, Alexandria Rossheim, Michael A. Martin, Mandy Waters, Arianna Smith, Shannon R. Matzinger, Sarah Elizabeth Totten, Emily A. Travanty – If names are not correct, please change them in the gisaid template section of the submissions google sheet, so that they are up to date.
+    + You have to manually put these in the first time and then you can select and apply this list for later submissions
 12. Then select “Unpublished” and then continue (can leave the rest of the boxes blank)
 13. Under Review and Submit, make sure everything looks correct, then submit
 
@@ -291,7 +272,7 @@ The objective of this code is to automate the creation of metadata tables for GI
     + ncbi_sra_metadata_formatting.R
     + ncbi_genbank_metadata_formatting.R
     + submission_completed_metadata.R
-    
+
 I put all my metadata files (both those required as inputs and written out from these scripts) for a batch of uploads in a single directory, so the working directory is always the same.
 
 ###Installing R {.tabset .tabset-fade .tabset-pills}
@@ -305,14 +286,14 @@ Click [here](https://www.digitalocean.com/community/tutorials/how-to-install-r-o
 # Step 1 — Add GPG Key
 # Logged into your Ubuntu 18.04 server as a sudo non-root user, add the relevant GPG key.
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
- 
+
 # Step 2 — Add the R Repository
 sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/'
     # If you’re not using 18.04, find the relevant repository from the R Project Ubuntu list, named for each release.
 
 # Step 3 — Update Package Lists
 sudo apt update
- 
+
 # Step 4 — Install R
 sudo apt install r-base
     # If prompted to confirm installation, press y to continue.
@@ -353,14 +334,14 @@ Now you can install R version 4
 # Step 1 — Add GPG Key
 # Logged into your Ubuntu 18.04 server as a sudo non-root user, add the relevant GPG key.
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
- 
+
 # Step 2 — Add the R Repository
 sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran40/'
     # If you’re not using 18.04, find the relevant repository from the R Project Ubuntu list, named for each release.
 
 # Step 3 — Update Package Lists
 sudo apt update
- 
+
 # Step 4 — Install R
 sudo apt install r-base
     # If prompted to confirm installation, press y to continue.
@@ -416,7 +397,7 @@ Now you're ready to run the script R scripts
 
 ###GISAID and NCBI Biosample {.tabset .tabset-fade .tabset-pills}
 ####Useage
-In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.\*.csv in directory), concats the  files, filters for samples > 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample, a file that lists the current sample names, GISAID formatted names (users can then use awk command to rename samples), and NCBI GenBank formatted names (with BIOPROJECT and Surveillance data if available), a file if any samples are missing the collection date, a file if the samples have a collection date prior to 2020, a file if those samples have already been uploaded (resequenced, but not because they failed), and a file if samples have been rerun because they failed or had contamination. The metadata file will be written out for samples with >50 coverage, are the latest sequencing results, aren't a blank, and haven't been previously submitted (GISAID, BioSample, SRA, or GenBank).  You can run this R script directly from the command line.  You will need to supply 7 pieces of information as options / flags when running the script. 
+In short, the script takes in user specified information to pull all sequencing metadata sheets within a directory (reads in all results_.\*.csv in directory), concats the  files, filters for samples > 50% coverage, and then creates / writes the formatted files for sample submission to GISAID and NCBI Biosample, a file that lists the current sample names, GISAID formatted names (users can then use awk command to rename samples), and NCBI GenBank formatted names (with BIOPROJECT and Surveillance data if available), a file if any samples are missing the collection date, a file if the samples have a collection date prior to 2020, a file if those samples have already been uploaded (resequenced, but not because they failed), and a file if samples have been rerun because they failed or had contamination. The metadata file will be written out for samples with >50 coverage, are the latest sequencing results, aren't a blank, and haven't been previously submitted (GISAID, BioSample, SRA, or GenBank).  You can run this R script directly from the command line.  You will need to supply 7 pieces of information as options / flags when running the script.
 
 **Script name:** gisaid_ncbi_biosample_metadata_formatting.R  
 **Input files:** results_\*.tsv (pull all files with this regex), rerun_samples_\*.tsv, completed_submissions_\*.tsv, ongoing_submissions\*.tsv
@@ -427,8 +408,8 @@ In short, the script takes in user specified information to pull all sequencing 
 3. -s | --submitter_name = gisaid_submitter_name
 4. -t | --seq_type = sequencing_type (Oxford Nanopore GridION, Illumina MiSeq, Illumina NextSeq)
 5. -r | --rerun_file = path/to/rerun_file.tsv # tsv downloaded from List_of_bad_runs_and_waste_water_samples
-6. -c | --completed_file = path/to/completed_file.tsv # tsv downloaded from submissions_and_compiled_metadata 
-7. -o | --ongoing_file = path/to/ongoing_file.tsv # tsv downloaded from submissions_and_compiled_metadata 
+6. -c | --completed_file = path/to/completed_file.tsv # tsv downloaded from submissions_and_compiled_metadata
+7. -o | --ongoing_file = path/to/ongoing_file.tsv # tsv downloaded from submissions_and_compiled_metadata
 
 **Example usage (short flags):**
 ```{bash, "gisaid_short", echo=TRUE, eval=FALSE}
@@ -499,7 +480,7 @@ WARNING: the samples below have been submitted under multiple projects.  If you 
    2101649000  NEXSEQ_046 NEXSEQ_050
    2101648994  NEXSEQ_046 NEXSEQ_050
    2101648987  NEXSEQ_046 NEXSEQ_050
-   
+
 FINISHED! Please check warnings and output files
 
 ```
@@ -606,7 +587,7 @@ cut -f 14 ncbi_sra_submission_2021-07-17_metadata.tsv | sed 's/"//g' | grep '^CO
 
 # Delete the files we don't want to keep. Run this in the directory were your gzipped fastas are located. You may need to change the path to fastqs_to_keep.tsv. To see how this runs you can always comment out rm "$i" line first to check which fastas will be deleted. Then add it back in to delete files you won't be uploading.
 for i in *fastq.gz; do
-    if ! grep -qxFe "$i" ../../fastqs_to_keep.tsv; then 
+    if ! grep -qxFe "$i" ../../fastqs_to_keep.tsv; then
     	echo "Deleting: $i"
         rm "$i"
     fi
@@ -635,7 +616,7 @@ Execution halted
 
 ###NCBI Genbank {.tabset .tabset-fade .tabset-pills}
 ####Useage
-This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_\*.tsv), and downloaded file from NCBI SRA (metadata-.\*-processed-ok.tsv). You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script. 
+This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_\*.tsv), and downloaded file from NCBI SRA (metadata-.\*-processed-ok.tsv). You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script.
 
 **Script name:** ncbi_genbank_metadata_formatting.R  
 **Input files in path:** metadata-\*-processed-ok.tsv (downloaded from NCBI submission page - click 'Download metadata file with SRA accessions' and moved to directory you put in the -p option) and gisaid_hcov-19_\*.tsv (Download the seqeunce_metadata file from GISAID search and move to directory you put in the -p option)  
@@ -700,11 +681,11 @@ Execution halted
 
 ###Combined data - submission completed tab {.tabset .tabset-fade .tabset-pills}
 ####Useage
-This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_\*.tsv), genbank donwloaded file (seqids.txt or accessions.txt) and downloaded file from NCBI SRA (metadata-.\*-processed-ok.tsv), and results\*.tsv to pull the seq_run information. This code will output a file with combined metadata that you will add to the 'COMPLETED_submssions' tab and conditionally a file if GenBank rejected some of your samples that you will add to the 'ONGOING_submissions' tab.  You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script. 
+This script takes in user specified information, downloaded file from GISAID (gisaid_hcov-19_\*.tsv), genbank donwloaded file (seqids.txt or accessions.txt) and downloaded file from NCBI SRA (metadata-.\*-processed-ok.tsv), and results\*.tsv to pull the seq_run information. This code will output a file with combined metadata that you will add to the 'COMPLETED_submssions' tab and conditionally a file if GenBank rejected some of your samples that you will add to the 'ONGOING_submissions' tab.  You can run this R script directly from the command line.  You will need to supply 2 pieces of information as options / flags when running the script.
 
 **Script name:** submission_completed_metadata.R  
 **Input files in path:** metadata-\*-processed-ok.tsv, seqids.txt (sometimes GenBank sends this file as accessions.txt - code will take either file name), and gisaid_hcov-19_\*.tsv  
-**Options / flags:** required to fill in all.  The code will check if the user specificed both options or it will error out. 
+**Options / flags:** required to fill in all.  The code will check if the user specificed both options or it will error out.
 
 1. -p | --path = path/to/seq_metadata/files # This also sets the working directory to write files
 2. -s | --submitter_name = submitter name

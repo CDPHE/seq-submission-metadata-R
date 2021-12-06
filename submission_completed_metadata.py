@@ -130,7 +130,7 @@ if __name__ == '__main__':
     
     rename_col = { 'virus_name':'Virus name', 
                   'title' :'sample_title', 
-                  'platform':'instrument_model', 
+#                   'platform':'instrument_model', 
                   'bioproject_accession' :'BioProject', 
                   'biosample_accession': 'BioSample', 
                   'accession' :'SRA', 
@@ -166,7 +166,7 @@ if __name__ == '__main__':
 
         rename_col = { 'virus_name':'Virus name', 
                       'title' :'sample_title', 
-                      'platform':'instrument_model', 
+#                       'platform':'instrument_model', 
                       'bioproject_accession' :'BioProject', 
                       'biosample_accession': 'BioSample', 
                       'accession' :'SRA', 
