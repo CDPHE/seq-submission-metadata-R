@@ -224,6 +224,9 @@ if __name__ == '__main__':
     temp =rerun_df[crit]
     
     if temp.shape[0] > 0:
+        rerun_first_runs = temp.first_run.unique().tolist()
+        rerun_re_runs = temp.re_run.unique().tolist()
+        
         outfile = os.path.join(metadata_dir, 'samples_rerun_%s.tsv' % today_date)
         temp.to_csv(outfile, sep = '\t', index= False)
         
@@ -232,16 +235,24 @@ if __name__ == '__main__':
         print('           If you are processing the project in "first_run" these samples will be removed from the dataset:\n')
         print(temp[['accession_id', 'first_run', 're_run']])
         print('\n')
-    
-    #### drop the accessions if the re-run seq_run doesn't match the seq run in the metadata_readin
-    ####### get list of accessions where the re-run seq_run != one of the seq_Runs in submission list
-    crit2 = ~temp.re_run.isin(metadata_readin_seq_runs)
-    temp = temp[crit2]
-    to_drop_accessions = temp.accession_id.unique().tolist()
-    
-    drop_crit= ~ metadata_readin.accession_id.isin(to_drop_accessions)
-    metadata_readin = metadata_readin[drop_crit]
-    metadata_readin = metadata_readin.reset_index(drop = True)
+
+        #### drop the accessions if the re-run seq_run doesn't match the seq run in the metadata_readin
+        to_drop_accessions_dict = dict(zip(temp.accession_id, temp.re_run))
+        print(to_drop_accessions_dict)
+
+        rows_to_drop = []
+        for row in range(metadata_readin.shape[0]):
+            accession_id = metadata_readin.accession_id[row]
+            seq_run = metadata_readin.seq_run[row]
+            if accession_id in to_drop_accessions_dict:
+                if seq_run == to_drop_accessions_dict[accession_id]:
+                    # drop that row otherwise keep
+                    rows_to_drop.append(row)
+
+
+        drop_crit = ~metadata_readin.index.isin(rows_to_drop)
+        metadata_readin = metadata_readin[drop_crit]
+        metadata_readin = metadata_readin.reset_index(drop = True)
     
     
     #######################
