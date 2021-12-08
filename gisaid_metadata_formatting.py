@@ -139,7 +139,7 @@ if __name__ == '__main__':
         # if COVIDSEQ 3 primers used update to Artic V3 primers
         for row in range(metadata_readin.shape[0]):
             primer_set = metadata_readin.primer_set[row]
-            if primer_set == 'COVIDSEQ V3' or primer_set == 'COVIDSeqV3' or primer_set == 'COVIDSeq V3':
+            if primer_set == 'COVIDSEQ V3' or primer_set == 'COVIDSeqV3' or primer_set == 'COVIDSeq V3' or primer_set == 'V3':
                 metadata_readin.at[row, 'primer_set'] = 'Artic V3'
                 
         # if missing fill in with 'Artic V3'
