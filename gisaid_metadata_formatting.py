@@ -238,7 +238,7 @@ if __name__ == '__main__':
 
         #### drop the accessions if the re-run seq_run doesn't match the seq run in the metadata_readin
         to_drop_accessions_dict = dict(zip(temp.accession_id, temp.re_run))
-        print(to_drop_accessions_dict)
+#         print(to_drop_accessions_dict)
 
         rows_to_drop = []
         for row in range(metadata_readin.shape[0]):
