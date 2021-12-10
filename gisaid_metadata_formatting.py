@@ -210,8 +210,9 @@ if __name__ == '__main__':
     ##### fix first run names....
     for row in range(rerun_df.shape[0]):
         first_run = rerun_df.first_run[row]
-        if re.search('\(', first_run):
-            rerun_df.at[row, 'first_run'] = first_run.split('(')[0]
+        if not pd.isnull(first_run):
+            if re.search('\(', first_run):
+                rerun_df.at[row, 'first_run'] = first_run.split('(')[0]
 
     rerun_accessions = rerun_df.accession_id.unique().tolist()
     metadata_readin_accessions = metadata_readin.accession_id.unique().tolist()
