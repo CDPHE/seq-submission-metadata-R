@@ -141,7 +141,11 @@ if __name__ == '__main__':
             primer_set = metadata_readin.primer_set[row]
             if primer_set == 'COVIDSEQ V3' or primer_set == 'COVIDSeqV3' or primer_set == 'COVIDSeq V3' or primer_set == 'V3':
                 metadata_readin.at[row, 'primer_set'] = 'Artic V3'
-                
+        # fix Artic V4 primers....
+        for row in range(metadata_readin.shape[0]):
+            primer_set = metadata_readin.primer_set[row]
+            if primer_set == 'V4' :
+                metadata_readin.at[row, 'primer_set'] = 'Artic V4'        
         # if missing fill in with 'Artic V3'
         crit = metadata_readin.primer_set.isna()
         missing_primers = metadata_readin[crit]
@@ -403,7 +407,7 @@ if __name__ == '__main__':
     gisaid_df['covv_subm_lab'] = 'Colorado Department of Public Health and Environment'
     gisaid_df['covv_subm_lab_addr'] = '8100 E. Lowry Blvd. Denver CO, 80230'
     gisaid_df['covv_subm_sample_id'] = ''
-    gisaid_df['covv_authors'] = 'Laura Bankers, Molly C. Hetherington-Rauth, Diana Ir, Alexandria Rossheim, Michael Martin, Mandy Waters, Arianna Smith, Shannon R. Matzinger, Sarah Elizabeth Totten, Emily A. Travanty'
+    gisaid_df['covv_authors'] = 'Laura Bankers, Molly C. Hetherington-Rauth, Diana Ir, Alexandria Rossheim, Michael Martin, Mandy Waters, Arianna Smith, Shannon R. Matzinger, Emily A. Travanty'
     gisaid_df['covv_comment'] = ''
     gisaid_df['comment_type'] = ''
     gisaid_df['covv_add_host_info'] = ''
