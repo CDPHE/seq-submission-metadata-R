@@ -22,6 +22,14 @@ def getOptions(args=sys.argv[1:]):
 
 if __name__ == '__main__':
     
+    
+    print('')
+    print('  ***** RUNNING submission_completed_metadata.py *****')
+    print('  last updated: 2022-02-18')
+    print('  updates: add surviellence data fields')
+    print('')
+    print('')
+    
     # get user input and check that none are missing
     options = getOptions()  
     missing_flags = 0
@@ -70,6 +78,7 @@ if __name__ == '__main__':
             accession_id = accession_id.split('CO-CDPHE-')[1]
         ncbi_in.at[row, 'accession_id'] = accession_id
     ncbi_in = ncbi_in.set_index('accession_id')
+    print('size ncbi_in = %d rows' % ncbi_in.shape[0])
     
     ### from gisaid 
     for file in glob.glob('gisaid_hcov-19_*.tsv'):
@@ -84,14 +93,15 @@ if __name__ == '__main__':
         
                           
     ncbi_gisaid_merged = ncbi_in.join(gisaid_in, how = 'left') 
+    print('size ncbi_gisaid_merged = %d rows' % ncbi_gisaid_merged.shape[0])
 #     ncbi_gisaid_merged = ncbi_gisaid_merged.reset_index()
     
     ### from genbank    
     ###### rename file genbank sends if not seqids.txt
     if os.path.exists('accessions.txt'):
         shutil.move('accessions.txt', 'seqids.txt')
-    else:
-        print('  GenBank file has expected file name\n')
+#     else:
+#         print('  GenBank file has expected file name\n')
         
     genbank = pd.read_csv('seqids.txt', sep = '\t', header = None, names = ['col1', 'GenBank'])
     for row in range(genbank.shape[0]):
@@ -99,15 +109,18 @@ if __name__ == '__main__':
         genbank.at[row, 'accession_id'] = accession_id
     genbank = genbank.set_index('accession_id')
     ncbi_gisaid_genbank_merged = ncbi_gisaid_merged.join(genbank, how = 'outer')
+    print('size ncbi_gisaid_genbank_merged = %d rows' % ncbi_gisaid_genbank_merged.shape[0])
     
     ### fiiltered results file to get the seq_run number
     metadata_readin = pd.read_csv('filtered_results_subset_metadata.tsv', dtype = {'accession_id' : object}, sep = '\t')
-    col_order = ['accession_id', 'seq_run']
+    col_order = ['accession_id', 'seq_run', 'covv_sampling_strategy', 'purpose_of_sampling', 'purpose_of_sequencing', 'purpose_of_sequencing_details']
     metadata_readin = metadata_readin[col_order]
     metadata_readin = metadata_readin.set_index('accession_id')
+    print('metadata_readin = %d rows' % metadata_readin.shape[0])
 
 
     all_merged = metadata_readin.join(ncbi_gisaid_genbank_merged, how = 'outer')
+    print('size all_merged = %d rows' % all_merged.shape[0])
     all_merged = all_merged.reset_index()
     
     
@@ -139,7 +152,7 @@ if __name__ == '__main__':
     completed_tab_columns = ['submitter', 'accession_id', 'seq_run', 'Virus name', 'isolate/sample_name',
        'sample_title', 'instrument_model', 'Isolation Source',
        'Collection date', 'Lineage', 'Clade', 'BioProject', 'BioSample', 'SRA',
-       'GenBank', 'GISAID', 'Submission Date']
+       'GenBank', 'GISAID', 'Submission Date', 'covv_sampling_strategy', 'purpose_of_sampling', 'purpose_of_sequencing', 'purpose_of_sequencing_details']
     complete = complete.rename(columns = rename_col)
     complete = complete[completed_tab_columns]
     complete = complete.sort_values(by = 'seq_run')
@@ -156,14 +169,14 @@ if __name__ == '__main__':
         ### add columns
         ongoing['submitter'] = submitter_name
         ongoing['Isolation Source'] = 'patient isolate'
-        ongoing['Submission Date (genbank - final)'] = ''
+        ongoing['Submission Date (genbank - final)'] = today_date
 
         for row in range(ongoing.shape[0]):
             accession_id = ongoing.accession_id[row]
             isolate_name = 'CO-CDPHE-%s' % accession_id
             ongoing.at[row, 'isolate/sample_name'] = isolate_name
-
-
+            
+            
         rename_col = { 'virus_name':'Virus name', 
                       'title' :'sample_title', 
 #                       'platform':'instrument_model', 
@@ -177,7 +190,7 @@ if __name__ == '__main__':
            'isolate/sample_name', 'sample_title', 'instrument_model',
            'Isolation Source', 'Collection date', 'Lineage', 'Clade',
            'BioProject', 'BioSample', 'SRA', 'GenBank', 'GISAID',
-           'Submission Date (genbank - final)']
+           'Submission Date (genbank - final)', 'covv_sampling_strategy', 'purpose_of_sampling', 'purpose_of_sequencing', 'purpose_of_sequencing_details']
 
         ongoing = ongoing.rename(columns = rename_col)
         ongoing = ongoing[ongoing_tab_columns]

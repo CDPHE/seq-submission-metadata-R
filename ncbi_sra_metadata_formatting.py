@@ -20,6 +20,13 @@ def getOptions(args=sys.argv[1:]):
 
 if __name__ == '__main__':
     
+    print('')
+    print('  ***** RUNNING ncbi_sra_metadata_formatting.py *****')
+    print('  last updated: 2022-02-18')
+    print('  updates: fixed NextSeq 550 instrument model')
+    print('')
+    print('')
+    
     # get user input and check that none are missing
     options = getOptions()  
     missing_flags = 0
@@ -99,7 +106,7 @@ if __name__ == '__main__':
     sra = sra.reset_index()
     num_samples = sra.shape[0]
     
-    if sra.shape[0] != df.shape[0] and sra.shape[0] != bisample.shape[0]:
+    if sra.shape[0] != df.shape[0] and sra.shape[0] != biosample.shape[0]:
         print('  WARNING: the biosample and sra datasets are not the same size')
     
     ## add in the additional columns
@@ -112,17 +119,17 @@ if __name__ == '__main__':
         return fastq_name
         
     def get_fastq_name_ILLUMINA_single(cdphe_accession_id):
-        accession_id = cdphe_accession_id.split('-')[2]
+        accession_id = cdphe_accession_id.split('CO-CDPHE-')[1]
         fastq_name = '%s.fastq.gz' % accession_id
         return fastq_name
         
     def get_fastq_name_ILLUMINA_paired_R1(cdphe_accession_id):
-        accession_id = cdphe_accession_id.split('-')[2]
+        accession_id = cdphe_accession_id.split('CO-CDPHE-')[1]
         fastq_R1_name = '%s_R1_001.fastq.gz' % accession_id
         return fastq_R1_name
     
     def get_fastq_name_ILLUMINA_paired_R2(cdphe_accession_id):
-        accession_id = cdphe_accession_id.split('-')[2]
+        accession_id = cdphe_accession_id.split('CO-CDPHE-')[1]
         fastq_R2_name = '%s_R2_001.fastq.gz' % accession_id
         return fastq_R2_name
     
@@ -137,7 +144,7 @@ if __name__ == '__main__':
     if tech_platform in ['Illumina NextSeq']:
         sra['library_layout'] = 'single'
         sra['platform'] = 'ILLUMINA'
-        sra['instrument_model'] = 'NexSeq 550'
+        sra['instrument_model'] = 'NextSeq 550'
         sra['filename'] = sra.apply(lambda x:get_fastq_name_ILLUMINA_single(x.cdphe_accession_id), axis = 1)
         sra['filename2'] = ''
         

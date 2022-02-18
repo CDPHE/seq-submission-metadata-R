@@ -19,6 +19,13 @@ def getOptions(args=sys.argv[1:]):
     
 if __name__ == '__main__':
     
+    print('')
+    print('  ***** RUNNING ncbi_biosample_metadata_formatting.py *****')
+    print('  last updated: 2022-02-18')
+    print('  updates: add surviellence data fields')
+    print('')
+    print('')
+    
     # get user input and check that none are missing
     options = getOptions()  
     missing_flags = 0
@@ -84,7 +91,8 @@ if __name__ == '__main__':
     df = pd.read_csv(sample_df_path, sep = '\t', dtype = {'accession_id' : object})
     df = df.rename(columns = {'fasta_header' : 'cdphe_accession_id'})
     
-    starting_col = ['cdphe_accession_id', 'collection_date']
+    starting_col = ['cdphe_accession_id', 'collection_date', 'purpose_of_sampling',
+       'purpose_of_sequencing', 'purpose_of_sequencing_details']
     
     df = df.set_index('cdphe_accession_id')
     
@@ -118,8 +126,7 @@ if __name__ == '__main__':
        'host_recent_travel_return_date', 'host_sex', 'host_specimen_voucher',
        'host_subject_id', 'lat_lon', 'passage_method', 'passage_number',
        'prior_sars_cov_2_antiviral_treat', 'prior_sars_cov_2_infection',
-       'prior_sars_cov_2_vaccination', 'purpose_of_sampling',
-       'purpose_of_sequencing', 'sars_cov_2_diag_gene_name_1',
+       'prior_sars_cov_2_vaccination','sars_cov_2_diag_gene_name_1',
        'sars_cov_2_diag_gene_name_2', 'sars_cov_2_diag_pcr_ct_value_1',
        'sars_cov_2_diag_pcr_ct_value_2', 'vaccine_received',
        'virus_isolate_of_prior_infection', 'description']

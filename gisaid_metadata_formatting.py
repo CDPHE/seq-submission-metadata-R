@@ -29,6 +29,13 @@ def getOptions(args=sys.argv[1:]):
 
 if __name__ == '__main__':
     
+    print('')
+    print('  ***** RUNNING gisaid_metadata_formatting.py *****')
+    print('  last updated: 2022-02-18')
+    print('  updates: add surviellence data fields')
+    print('')
+    print('')
+    
     # get user input and check that none are missing
     options = getOptions()  
     missing_flags = 0
@@ -116,9 +123,15 @@ if __name__ == '__main__':
     metadata_readin = pd.concat(df_list)
     metadata_readin = metadata_readin.reset_index(drop = True)
     metadata_readin = metadata_readin.rename(columns = {'percent_non_ambigous_bases' : 'coverage'})
+    def round_and_format_mean_depth(covv_coverage):
+        rounded = int(round(covv_coverage, 0))
+        coverage_value = '%dx' % rounded
+        return coverage_value
+    
+    metadata_readin['covv_coverage'] = metadata_readin.apply(lambda x:round_and_format_mean_depth(x.mean_depth), axis = 1) 
     
     # check for surveillance data
-    if 'surveillance' in metadata_readin.columns:
+    if 'covv_sampling_strategy' in metadata_readin.columns:
         surveillance = True
         print('  *** SURVEILLANCE:')
         print('     results.tsv files have surveillance data')
@@ -126,7 +139,10 @@ if __name__ == '__main__':
         
     else:
         surveillance = False
-        metadata_readin['surveillance'] = ''
+        metadata_readin[ 'covv_sampling_strategy'] = ''
+        metadata_readin[ 'purpose_of_sampling'] = ''
+        metadata_readin[ 'purpose_of_sequencing'] = ''
+        metadata_readin[ 'purpose_of_sequencing_details'] = ''
         print('  *** SURVEILLANCE:')
         print('    results.tsv files DO NOT have surveillance data')
         print('\n')
@@ -198,7 +214,7 @@ if __name__ == '__main__':
     else:
         metadata_readin = metadata_readin[crit1 & crit2 & crit3]
 
-    col_order = ['accession_id', 'coverage', 'collection_date', 'fasta_header', 'seq_run', 'surveillance', 'primer_set']
+    col_order = ['accession_id', 'coverage', 'collection_date', 'fasta_header', 'seq_run', 'covv_sampling_strategy', 'purpose_of_sampling', 'purpose_of_sequencing', 'purpose_of_sequencing_details', 'primer_set', 'covv_coverage']
     metadata_readin = metadata_readin[col_order]
     metadata_readin = metadata_readin.reset_index(drop = True)
     metadata_readin = metadata_readin.sort_values(by = 'coverage', ascending = False)
@@ -370,11 +386,10 @@ if __name__ == '__main__':
     ####################
     # create gisaid metadata dataframe
     ### first begin with metadata_readin in data and do some manipulation with those columns
-    starting_col = ['accession_id', 'collection_date', 'fasta_header', 'surveillance', 'primer_set']
+    starting_col = ['accession_id', 'collection_date', 'fasta_header',  'primer_set', 'covv_coverage', 'covv_sampling_strategy']
     gisaid_df = metadata_readin[starting_col]
     
-    col_rename = {'collection_date' : 'covv_collection_date',
-                 'surveillance' : 'covv_sampling_strategy'}
+    col_rename = {'collection_date' : 'covv_collection_date'}
     gisaid_df = gisaid_df.rename(columns = col_rename)
     
     def create_covv_virus_name(covv_collection_date, fasta_header):
@@ -400,7 +415,7 @@ if __name__ == '__main__':
     gisaid_df['covv_treatment'] = ''
     gisaid_df['covv_seq_technology'] = tech_platform
     gisaid_df['covv_assembly_method'] = ''
-    gisaid_df['covv_coverage'] = ''
+#     gisaid_df['covv_coverage'] = ''
     gisaid_df['covv_orig_lab'] = 'Colorado Department of Public Health and Environment'
     gisaid_df['covv_orig_lab_addr'] = '8100 E. Lowry Blvd. Denver CO, 80230'
     gisaid_df['covv_provider'] = ''
@@ -436,7 +451,7 @@ if __name__ == '__main__':
     ##################
     # create rename fasta file...
     ##### begin with columns from metadata_readin df
-    starting_col = ['fasta_header', 'seq_run', 'collection_date', 'surveillance']
+    starting_col = ['fasta_header', 'seq_run', 'collection_date', 'covv_sampling_strategy', 'purpose_of_sampling', 'purpose_of_sequencing', 'purpose_of_sequencing_details']
     rename_fasta = metadata_readin[starting_col]
     
     col_rename = {'fasta_header' : 'accession_id',
@@ -446,15 +461,15 @@ if __name__ == '__main__':
     rename_fasta['gisaid_name'] = rename_fasta.apply(lambda x:create_covv_virus_name(x.collection_date, x.accession_id), axis=1)
     
     def create_ncbi_name(surveillance, gisaid_name):
-        if surveillance == 'baseline surveillance':
+        if surveillance == 'Baseline surveillance':
             ncbi_name = '%s [PRJNA686984] [keyword=purposeofsampling:baselinesurveillance]' % gisaid_name
-        elif surveillance == 'targeted surveillance':
-            ncbi_name = '%s [PRJNA686984] [keyword=purposeofsampling:targetedsurveillance]' % gisaid_name
+#         elif surveillance == 'targeted surveillance':
+#             ncbi_name = '%s [PRJNA686984] [keyword=purposeofsampling:targetedsurveillance]' % gisaid_name
         else:
             ncbi_name = '%s [PRJNA686984]' % gisaid_name
         return ncbi_name
         
-    rename_fasta['ncbi_name'] = rename_fasta.apply(lambda x:create_ncbi_name(x.surveillance, x.gisaid_name), axis = 1)
+    rename_fasta['ncbi_name'] = rename_fasta.apply(lambda x:create_ncbi_name(x.purpose_of_sequencing, x.gisaid_name), axis = 1)
     
     col_order = ['accession_id', 'gisaid_name', 'proj_num', 'ncbi_name']
     rename_fasta = rename_fasta[col_order]
