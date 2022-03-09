@@ -18,7 +18,7 @@ def getOptions(args=sys.argv[1:]):
     parser.add_argument("-s", '--submitter_name', default = '',  help = 'REQUIRED: submitter name for GISAID')
     parser.add_argument("-r", '--rerun_file', default = '',  help = 'REQUIRED: path and file name for text file with rerun information as downloaded from Google Drive')
     parser.add_argument("-c", '--completed_file', default = '',  help = 'REQUIRED: path and file name for text file with completed submission information as downloaded from Google Drive')
-    parser.add_argument("-o", '--ongoing_file', default = '',  help = 'REQUIRED: path and file name for text file with ongoing submission information as downloaded from Google Drive')
+#     parser.add_argument("-o", '--ongoing_file', default = '',  help = 'REQUIRED: path and file name for text file with ongoing submission information as downloaded from Google Drive')
     parser.add_argument('-z', '--coverage_min', default = 50,  type = int, help = 'OPTIONAL: minmium coverage')
     parser.add_argument("-y", '--coverage_max', default = 100, type = int,  help = 'OPTIONAL: maximum coverage')
     parser.add_argument("-t", '--seq_type', default = '',  help = "REQUIRED: sequencing type as a string in quotes that has to match 'Illumina MiSeq', 'Illumina NextSeq', 'Illumina NovaSeq', 'Oxford Nanopore GridION'")
@@ -31,8 +31,9 @@ if __name__ == '__main__':
     
     print('')
     print('  ***** RUNNING gisaid_metadata_formatting.py *****')
-    print('  last updated: 2022-02-18')
+    print('  last updated: 2022-03-09')
     print('  updates: add surviellence data fields')
+    print('  updates: remove ongoing submissions input')
     print('')
     print('')
     
@@ -73,10 +74,10 @@ if __name__ == '__main__':
         print('  ERROR must specify "--completed_file"')
         missing_flags =+ 1
         
-    ongoing_submissions_path = options.ongoing_file
-    if ongoing_submissions_path == '':
-        print('  ERROR must specify "--ongoing_file"')
-        missing_flags =+ 1
+#     ongoing_submissions_path = options.ongoing_file
+#     if ongoing_submissions_path == '':
+#         print('  ERROR must specify "--ongoing_file"')
+#         missing_flags =+ 1
         
     primer_set = options.primer_set
     coverage_min = options.coverage_min
@@ -97,7 +98,7 @@ if __name__ == '__main__':
     print('  sequencing platform: \n    %s\n' % tech_platform)
     print('  name of rerun file: \n    %s\n' % rerun_file_path)
     print('  name of completed submissions file: \n    %s\n' % completed_submissions_path)
-    print('  name of ongoing submissions file: \n    %s\n' % ongoing_submissions_path)
+#     print('  name of ongoing submissions file: \n    %s\n' % ongoing_submissions_path)
     print('  min coverage cutoff: \n    %d\n' % coverage_min)
     print('  max coverage cutoff:\n    %d\n' % coverage_max)
     print('  date:\n    %s\n' % today_date)
@@ -341,30 +342,30 @@ if __name__ == '__main__':
 
         
         
-    ###############################  
-    # ongoing submission
-    ### read in ongoing submissions
-    ongoing_submissions = pd.read_csv(ongoing_submissions_path, sep = '\t', dtype = {'accession_id' : object})
-    ongoing_accessions = ongoing_submissions.accession_id.unique().tolist()
-    metadata_readin_accessions = metadata_readin.accession_id.unique().tolist()
+#     ###############################  
+#     # ongoing submission
+#     ### read in ongoing submissions
+#     ongoing_submissions = pd.read_csv(ongoing_submissions_path, sep = '\t', dtype = {'accession_id' : object})
+#     ongoing_accessions = ongoing_submissions.accession_id.unique().tolist()
+#     metadata_readin_accessions = metadata_readin.accession_id.unique().tolist()
     
-    #### drop those accessions that have already be submitted
-    crit1 = ~metadata_readin.accession_id.isin(ongoing_accessions)
-    metadata_readin = metadata_readin[crit1]
-    metadata_readin = metadata_readin.reset_index(drop = True)
+#     #### drop those accessions that have already be submitted
+#     crit1 = ~metadata_readin.accession_id.isin(ongoing_accessions)
+#     metadata_readin = metadata_readin[crit1]
+#     metadata_readin = metadata_readin.reset_index(drop = True)
     
-    #### print to screen those that have already been submitted and save to file
-    crit2 = ongoing_submissions.accession_id.isin(metadata_readin_accessions)
-    temp = ongoing_submissions[crit2]
-    outfile = os.path.join(metadata_dir, 'samples_in_progress_already_%s.tsv' % today_date)
-    temp.to_csv(outfile, sep = '\t', index = False)
+#     #### print to screen those that have already been submitted and save to file
+#     crit2 = ongoing_submissions.accession_id.isin(metadata_readin_accessions)
+#     temp = ongoing_submissions[crit2]
+#     outfile = os.path.join(metadata_dir, 'samples_in_progress_already_%s.tsv' % today_date)
+#     temp.to_csv(outfile, sep = '\t', index = False)
     
-    if temp.shape[0] > 0:
-        print('  *** ONGOING SUBMISSIONS:')
-        print('  WARNING: The samples below are in progress of already beiing submitted (ongoing submissions)')
-        print('           and will be removed from this submission:\n')
-        print(temp[['submitter', 'accession_id', 'Seq_run']])
-        print('\n')
+#     if temp.shape[0] > 0:
+#         print('  *** ONGOING SUBMISSIONS:')
+#         print('  WARNING: The samples below are in progress of already beiing submitted (ongoing submissions)')
+#         print('           and will be removed from this submission:\n')
+#         print(temp[['submitter', 'accession_id', 'Seq_run']])
+#         print('\n')
 
     
 

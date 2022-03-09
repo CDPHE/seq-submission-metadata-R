@@ -25,8 +25,9 @@ if __name__ == '__main__':
     
     print('')
     print('  ***** RUNNING submission_completed_metadata.py *****')
-    print('  last updated: 2022-02-18')
+    print('  last updated: 2022-03-09')
     print('  updates: add surviellence data fields')
+    print('  updates: combine completed and ongoing outputs into a single output')
     print('')
     print('')
     
@@ -123,12 +124,9 @@ if __name__ == '__main__':
     print('size all_merged = %d rows' % all_merged.shape[0])
     all_merged = all_merged.reset_index()
     
+    # format for submissions spreadsheet
     
-    
-    
-    # filter for complete tab
-    complete = all_merged[~all_merged.GenBank.isna()]
-    complete = complete.reset_index(drop = True)
+    complete = all_merged
     
     ### add columns
     complete['submitter'] = submitter_name
@@ -161,45 +159,10 @@ if __name__ == '__main__':
     complete.to_csv(outfile, sep = '\t', index = False)
     
     
-    # filte for ongoing tab
-    ongoing = all_merged[all_merged.GenBank.isna()]
-    if ongoing.shape[0] > 0:
-        ongoing = ongoing.reset_index(drop = True)
-
-        ### add columns
-        ongoing['submitter'] = submitter_name
-        ongoing['Isolation Source'] = 'patient isolate'
-        ongoing['Submission Date (genbank - final)'] = today_date
-
-        for row in range(ongoing.shape[0]):
-            accession_id = ongoing.accession_id[row]
-            isolate_name = 'CO-CDPHE-%s' % accession_id
-            ongoing.at[row, 'isolate/sample_name'] = isolate_name
-            
-            
-        rename_col = { 'virus_name':'Virus name', 
-                      'title' :'sample_title', 
-#                       'platform':'instrument_model', 
-                      'bioproject_accession' :'BioProject', 
-                      'biosample_accession': 'BioSample', 
-                      'accession' :'SRA', 
-                      'Accession ID' : 'GISAID',
-                     'seq_run' : 'seq_run'}
-
-        ongoing_tab_columns = ['submitter', 'accession_id', 'seq_run', 'Virus name',
-           'isolate/sample_name', 'sample_title', 'instrument_model',
-           'Isolation Source', 'Collection date', 'Lineage', 'Clade',
-           'BioProject', 'BioSample', 'SRA', 'GenBank', 'GISAID',
-           'Submission Date (genbank - final)', 'covv_sampling_strategy', 'purpose_of_sampling', 'purpose_of_sequencing', 'purpose_of_sequencing_details']
-
-        ongoing = ongoing.rename(columns = rename_col)
-        ongoing = ongoing[ongoing_tab_columns]
-        ongoing = ongoing.sort_values(by = 'seq_run')
-
-        outfile = 'ONGOING_genbank_missing_%s_metadata.tsv' % today_date
-        ongoing.to_csv(outfile, sep = '\t', index = False)
+    # get the number rejected sequences from genbank
+    ongoing = complete[complete.GenBank.isna()]
         
-        print('%d sequences rejected by Genbank. Check %s file for details.' %(ongoing.shape[0], outfile))
+    print('%d sequences rejected by Genbank.' % (ongoing.shape[0]))
         
         
     
